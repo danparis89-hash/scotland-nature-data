@@ -4,367 +4,292 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Scotland Nature Dashboard</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.12.7/Recharts.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-is@18.3.1/umd/react-is.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/recharts@2.15.3/umd/Recharts.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { font-family: 'Instrument Sans', 'Segoe UI', system-ui, sans-serif; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        input:focus { outline: none; border-color: #40916C !important; box-shadow: 0 0 0 3px rgba(64,145,108,0.15) !important; }
     </style>
-    <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div id="root"></div>
-    <script type="text/babel">
-        const { useState, useCallback, useEffect } = React;
-        const { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } = Recharts;
+    <script>
+    // Wait for all CDN scripts to load before running app
+    window.addEventListener("DOMContentLoaded", function() {
 
-        /*
-         * SCOTLAND NATURE DASHBOARD
-         * Data sources:
-         * 1. GitHub Pages — processed NatureScot open data (national.json, sites.json)
-         * 2. Postcodes.io — postcode geocoding (live API)
-         * 3. NBN Atlas — species occurrence records (live API)
-         */
+        var e = React.createElement;
+        var useState = React.useState;
+        var useCallback = React.useCallback;
+        var useEffect = React.useEffect;
+        var BarChart = Recharts.BarChart;
+        var Bar = Recharts.Bar;
+        var XAxis = Recharts.XAxis;
+        var YAxis = Recharts.YAxis;
+        var Tooltip = Recharts.Tooltip;
+        var ResponsiveContainer = Recharts.ResponsiveContainer;
+        var Cell = Recharts.Cell;
 
-        const GITHUB_DATA_BASE = "https://danparis89-hash.github.io/scotland-nature-data/dashboard-data";
-        const SCOTTISH_PREFIXES = ["AB","DD","DG","EH","FK","HS","IV","KA","KW","KY","ML","PA","PH","TD","ZE"];
-        const GROUP_ICONS = {
-            Birds: "🐦", Mammals: "🦊", Plants: "🌿", Insects: "🦋", Fungi: "🍄",
-            Amphibians: "🐸", Reptiles: "🦎", Fish: "🐟", "Flowering Plants": "🌸",
-            Ferns: "🌾", Mosses: "🪨", Molluscs: "🐌", Crustaceans: "🦀", Spiders: "🕷️",
-        };
-        const DESIGNATION_COLORS = {
-            SSSI: "#2D6A4F", SAC: "#40916C", SPA: "#52B788", NNR: "#74C69D", Ramsar: "#95D5B2",
-        };
+        var GITHUB_DATA = "https://danparis89-hash.github.io/scotland-nature-data/dashboard-data";
+        var SCOT_PREFIX = ["AB","DD","DG","EH","FK","HS","IV","KA","KW","KY","ML","PA","PH","TD","ZE"];
+        var DESIG_COL = { SSSI:"#2D6A4F", SAC:"#40916C", SPA:"#52B788", NNR:"#74C69D", Ramsar:"#95D5B2" };
+        var ICONS = { Birds:"🐦", Mammals:"🦊", Plants:"🌿", Insects:"🦋", Fungi:"🍄", Amphibians:"🐸", Reptiles:"🦎", Fish:"🐟", "Flowering Plants":"🌸" };
 
-        async function fetchJSON(url) {
-            const res = await fetch(url);
-            if (!res.ok) throw new Error(`Failed: ${res.status}`);
-            return res.json();
+        function haversine(lat1,lon1,lat2,lon2){
+            var R=6371,dLat=((lat2-lat1)*Math.PI)/180,dLon=((lon2-lon1)*Math.PI)/180;
+            var a=Math.sin(dLat/2)**2+Math.cos((lat1*Math.PI)/180)*Math.cos((lat2*Math.PI)/180)*Math.sin(dLon/2)**2;
+            return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
         }
 
-        function haversineKm(lat1, lon1, lat2, lon2) {
-            const R = 6371;
-            const dLat = ((lat2 - lat1) * Math.PI) / 180;
-            const dLon = ((lon2 - lon1) * Math.PI) / 180;
-            const a = Math.sin(dLat / 2) ** 2 + Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
-            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        }
+        function Badge(p){ return e("span",{style:{display:"inline-block",padding:"2px 8px",borderRadius:"4px",fontSize:"11px",fontWeight:700,letterSpacing:"0.5px",color:"#fff",backgroundColor:DESIG_COL[p.type]||"#6B7280",fontFamily:"'JetBrains Mono',monospace"}},p.type); }
 
-        function DesignationBadge({ type }) {
-            return React.createElement("span", { style: {
-                display: "inline-block", padding: "2px 8px", borderRadius: "4px", fontSize: "11px",
-                fontWeight: 700, letterSpacing: "0.5px", color: "#fff",
-                backgroundColor: DESIGNATION_COLORS[type] || "#6B7280",
-                fontFamily: "'JetBrains Mono', monospace",
-            }}, type);
-        }
+        function App(){
+            var _api=useState(null), apiStatus=_api[0], setApiStatus=_api[1];
+            var _nat=useState(null), natData=_nat[0], setNatData=_nat[1];
+            var _sites=useState(null), allSites=_sites[0], setAllSites=_sites[1];
+            var _pc=useState(""), postcode=_pc[0], setPostcode=_pc[1];
+            var _loc=useState(null), location=_loc[0], setLocation=_loc[1];
+            var _ld=useState(false), loading=_ld[0], setLoading=_ld[1];
+            var _err=useState(null), error=_err[0], setError=_err[1];
+            var _sg=useState(null), speciesGroups=_sg[0], setSpeciesGroups=_sg[1];
+            var _sel=useState(null), selectedGroup=_sel[0], setSelectedGroup=_sel[1];
+            var _sl=useState(null), speciesList=_sl[0], setSpeciesList=_sl[1];
+            var _lsp=useState(false), loadingSpecies=_lsp[0], setLoadingSpecies=_lsp[1];
+            var _sld=useState(false), speciesLoading=_sld[0], setSpeciesLoading=_sld[1];
+            var _se=useState(null), speciesError=_se[0], setSpeciesError=_se[1];
+            var _rad=useState(5), radius=_rad[0], setRadius=_rad[1];
 
-        function StatusBanner({ status }) {
-            if (!status) return React.createElement("div", { style: { padding: "12px 16px", borderRadius: "10px", backgroundColor: "#F9FAFB", border: "1px solid #E5E7EB", fontSize: "13px", color: "#6B7280", textAlign: "center" }}, "Checking data sources…");
-            const problems = [];
-            if (!status.github) problems.push("GitHub Pages data");
-            if (!status.postcodes) problems.push("Postcodes.io");
-            if (!status.nbn) problems.push("NBN Atlas");
-            if (problems.length === 0) return null;
-            return React.createElement("div", { style: { padding: "16px 20px", borderRadius: "12px", backgroundColor: problems.length === 3 ? "#FEF2F2" : "#FFFBEB", border: "1px solid " + (problems.length === 3 ? "#FECACA" : "#FDE68A"), fontSize: "13px", lineHeight: 1.6 }},
-                React.createElement("div", { style: { fontWeight: 700, color: problems.length === 3 ? "#991B1B" : "#92400E", marginBottom: "6px" }},
-                    problems.length === 3 ? "Data sources unreachable" : "Some data sources unreachable"),
-                React.createElement("div", { style: { color: problems.length === 3 ? "#B91C1C" : "#A16207" }},
-                    problems.length === 3 ? "This dashboard requires internet access." : "Unreachable: " + problems.join(", ")),
-                React.createElement("div", { style: { display: "flex", gap: "16px", marginTop: "10px" }},
-                    [["GitHub data", status.github], ["Postcodes.io", status.postcodes], ["NBN Atlas", status.nbn]].map(([name, ok]) =>
-                        React.createElement("div", { key: name, style: { display: "flex", alignItems: "center", gap: "5px", fontSize: "12px" }},
-                            React.createElement("span", { style: { width: 8, height: 8, borderRadius: "50%", backgroundColor: ok ? "#22C55E" : "#EF4444", display: "inline-block" }}),
-                            React.createElement("span", { style: { color: "#374151" }}, name)
+            useEffect(function(){
+                var s={github:false,postcodes:false,nbn:false};
+                Promise.all([
+                    fetch(GITHUB_DATA+"/national.json").then(function(r){if(r.ok)return r.json();throw 0;}).then(function(d){setNatData(d);s.github=true;}).catch(function(){}),
+                    fetch(GITHUB_DATA+"/sites.json").then(function(r){if(r.ok)return r.json();throw 0;}).then(function(d){setAllSites(d);s.github=true;}).catch(function(){}),
+                    fetch("https://api.postcodes.io/postcodes/EH11RE").then(function(r){s.postcodes=r.ok;}).catch(function(){}),
+                    fetch("https://records-ws.nbnatlas.org/explore/groups?lat=55.95&lon=-3.19&radius=1").then(function(r){s.nbn=r.ok;}).catch(function(){})
+                ]).then(function(){setApiStatus(s);});
+            },[]);
+
+            function handleSearch(){
+                var clean=postcode.replace(/\s/g,"").toUpperCase();
+                if(clean.length<5){setError("Please enter a full Scottish postcode (e.g. EH1 1RE)");return;}
+                if(SCOT_PREFIX.indexOf(clean.slice(0,2))<0 && !/^G\d/.test(clean)){setError("This doesn't look like a Scottish postcode.");return;}
+                setError(null);setLoading(true);setSpeciesGroups(null);setSelectedGroup(null);setSpeciesList(null);setSpeciesError(null);
+                fetch("https://api.postcodes.io/postcodes/"+clean).then(function(r){if(!r.ok)throw new Error("Invalid");return r.json();}).then(function(data){
+                    if(data.result.country!=="Scotland")throw new Error("Not Scotland");
+                    var loc={lat:data.result.latitude,lon:data.result.longitude,admin:data.result.admin_district,constituency:data.result.parliamentary_constituency,postcode:data.result.postcode};
+                    setLocation(loc);setLoading(false);setSpeciesLoading(true);
+                    return fetch("https://records-ws.nbnatlas.org/explore/groups?lat="+loc.lat+"&lon="+loc.lon+"&radius="+radius+"&fq=country:Scotland").then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(d){
+                        setSpeciesGroups(d.filter(function(g){return g.count>0;}).map(function(g){return{name:g.name,count:g.count,speciesCount:g.speciesCount};}).sort(function(a,b){return b.count-a.count;}));
+                    }).catch(function(){setSpeciesError("Could not load species data from the NBN Atlas.");}).then(function(){setSpeciesLoading(false);});
+                }).catch(function(err){
+                    setLoading(false);
+                    setError(err.message==="Not Scotland"?"This postcode isn't in Scotland.":err.message==="Invalid"?"Postcode not recognised.":"Could not look up postcode. Check your internet connection.");
+                });
+            }
+
+            function handleGroupSelect(groupName){
+                if(groupName===selectedGroup){setSelectedGroup(null);setSpeciesList(null);return;}
+                setSelectedGroup(groupName);setLoadingSpecies(true);
+                fetch("https://records-ws.nbnatlas.org/explore/group/"+encodeURIComponent(groupName)+"?lat="+location.lat+"&lon="+location.lon+"&radius="+radius+"&pageSize=20&fq=country:Scotland")
+                .then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(d){setSpeciesList(d.map(function(s){return{name:s.commonName||s.name,scientificName:s.name,count:s.count};}));})
+                .catch(function(){setSpeciesList([]);}).then(function(){setLoadingSpecies(false);});
+            }
+
+            var canSearch=apiStatus&&apiStatus.postcodes;
+
+            // Status banner
+            function renderStatus(){
+                if(!apiStatus) return e("div",{style:{padding:"12px 16px",borderRadius:"10px",backgroundColor:"#F9FAFB",border:"1px solid #E5E7EB",fontSize:"13px",color:"#6B7280",textAlign:"center"}},"Checking data sources…");
+                var probs=[];
+                if(!apiStatus.github)probs.push("GitHub Pages data");
+                if(!apiStatus.postcodes)probs.push("Postcodes.io");
+                if(!apiStatus.nbn)probs.push("NBN Atlas");
+                if(probs.length===0)return null;
+                return e("div",{style:{padding:"16px 20px",borderRadius:"12px",backgroundColor:probs.length===3?"#FEF2F2":"#FFFBEB",border:"1px solid "+(probs.length===3?"#FECACA":"#FDE68A"),fontSize:"13px",lineHeight:1.6}},
+                    e("div",{style:{fontWeight:700,color:probs.length===3?"#991B1B":"#92400E",marginBottom:"6px"}},probs.length===3?"Data sources unreachable":"Some data sources unreachable"),
+                    e("div",{style:{color:probs.length===3?"#B91C1C":"#A16207"}},probs.length===3?"This dashboard requires internet access.":"Unreachable: "+probs.join(", ")),
+                    e("div",{style:{display:"flex",gap:"16px",marginTop:"10px"}},
+                        [["GitHub data",apiStatus.github],["Postcodes.io",apiStatus.postcodes],["NBN Atlas",apiStatus.nbn]].map(function(x){
+                            return e("div",{key:x[0],style:{display:"flex",alignItems:"center",gap:"5px",fontSize:"12px"}},
+                                e("span",{style:{width:8,height:8,borderRadius:"50%",backgroundColor:x[1]?"#22C55E":"#EF4444",display:"inline-block"}}),
+                                e("span",{style:{color:"#374151"}},x[0]));
+                        })
+                    )
+                );
+            }
+
+            // National panel
+            function renderNational(){
+                if(!natData||location)return null;
+                var counts=natData.designation_counts||{};
+                var types=Object.keys(counts).sort(function(a,b){return counts[b]-counts[a];});
+                return e("div",{style:{backgroundColor:"#fff",borderRadius:"16px",border:"1px solid #E5E7EB",boxShadow:"0 1px 3px rgba(0,0,0,0.04)",overflow:"hidden"}},
+                    e("div",{style:{padding:"16px 20px 12px",borderBottom:"1px solid #F3F4F6"}},
+                        e("h2",{style:{margin:0,fontSize:"16px",fontWeight:700,color:"#1B4332"}},"🏴󠁧󠁢󠁳󠁣󠁴󠁿 Protected Sites Across Scotland"),
+                        e("p",{style:{margin:"2px 0 0",fontSize:"12px",color:"#9CA3AF"}},"Source: NatureScot GeoJSON downloads · Processed "+(natData.last_processed?new Date(natData.last_processed).toLocaleDateString():"recently"))
+                    ),
+                    e("div",{style:{padding:"20px"}},
+                        e("div",{style:{display:"flex",gap:"12px",flexWrap:"wrap",marginBottom:"16px"}},
+                            types.map(function(t){return e("div",{key:t,style:{display:"flex",alignItems:"center",gap:"8px",padding:"10px 16px",borderRadius:"10px",backgroundColor:"#F0FFF4",border:"1px solid #D1FAE5"}},
+                                e(Badge,{type:t}),e("span",{style:{fontSize:"22px",fontWeight:700,color:"#1B4332",fontFamily:"'JetBrains Mono',monospace"}},counts[t].toLocaleString()));})
+                        ),
+                        e("div",{style:{fontSize:"14px",fontWeight:600,color:"#1B4332"}},(natData.total_sites||0).toLocaleString()+" total designated sites"),
+                        natData.data_sources&&natData.data_sources.protected_sites&&e("div",{style:{marginTop:"8px",fontSize:"11px",color:"#9CA3AF"}},natData.data_sources.protected_sites.attribution)
+                    )
+                );
+            }
+
+            // Nearby sites
+            function renderNearbySites(){
+                if(!allSites||!location)return null;
+                var nearby=allSites.filter(function(s){return s.centroid_lat&&s.centroid_lon;}).map(function(s){return Object.assign({},s,{distance:haversine(location.lat,location.lon,s.centroid_lat,s.centroid_lon)});}).filter(function(s){return s.distance<=radius;}).sort(function(a,b){return a.distance-b.distance;});
+                var byType={};nearby.forEach(function(s){byType[s.type]=(byType[s.type]||0)+1;});
+                return e("div",{style:{backgroundColor:"#fff",borderRadius:"16px",border:"1px solid #E5E7EB",boxShadow:"0 1px 3px rgba(0,0,0,0.04)",overflow:"hidden"}},
+                    e("div",{style:{padding:"16px 20px 12px",borderBottom:"1px solid #F3F4F6",display:"flex",alignItems:"center",justifyContent:"space-between"}},
+                        e("div",null,
+                            e("h2",{style:{margin:0,fontSize:"16px",fontWeight:700,color:"#1B4332"}},"📍 Protected Sites Nearby"),
+                            e("p",{style:{margin:"2px 0 0",fontSize:"12px",color:"#9CA3AF"}},nearby.length+" site"+(nearby.length!==1?"s":"")+" within "+radius+"km · Source: NatureScot open data")
+                        ),
+                        e("select",{value:radius,onChange:function(ev){setRadius(Number(ev.target.value));},style:{padding:"4px 8px",borderRadius:"6px",border:"1px solid #D1D5DB",fontSize:"12px",color:"#374151",cursor:"pointer"}},
+                            [2,5,10,20].map(function(v){return e("option",{key:v,value:v},v+" km");}))
+                    ),
+                    e("div",{style:{padding:"16px 20px"}},
+                        nearby.length===0
+                        ? e("div",{style:{padding:"20px",textAlign:"center",color:"#6B7280",fontStyle:"italic"}},"No designated sites within "+radius+"km. Try expanding the radius.")
+                        : e(React.Fragment,null,
+                            e("div",{style:{display:"flex",gap:"8px",flexWrap:"wrap",marginBottom:"12px"}},
+                                Object.keys(byType).map(function(t){return e("div",{key:t,style:{display:"flex",alignItems:"center",gap:"5px",padding:"3px 8px",borderRadius:"16px",backgroundColor:"#F0FFF4",border:"1px solid #D1FAE5",fontSize:"12px"}},e(Badge,{type:t}),e("span",{style:{fontWeight:600,color:"#1B4332"}},byType[t]));})
+                            ),
+                            e("div",{style:{display:"flex",flexDirection:"column",gap:"6px"}},
+                                nearby.slice(0,25).map(function(s,i){return e("div",{key:s.name+"-"+s.type+"-"+i,style:{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",borderRadius:"8px",backgroundColor:i%2===0?"#FAFDF7":"#fff",border:"1px solid #E5E7EB"}},
+                                    e("div",{style:{display:"flex",alignItems:"center",gap:"10px",flex:1,minWidth:0}},
+                                        e(Badge,{type:s.type}),
+                                        e("div",{style:{minWidth:0}},
+                                            e("div",{style:{fontWeight:600,color:"#1B4332",fontSize:"13px",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}},s.name),
+                                            s.area_ha&&e("div",{style:{fontSize:"11px",color:"#9CA3AF"}},s.area_ha.toLocaleString()+" ha")
+                                        )
+                                    ),
+                                    e("div",{style:{fontSize:"13px",fontWeight:600,color:"#40916C",whiteSpace:"nowrap",fontFamily:"'JetBrains Mono',monospace"}},s.distance.toFixed(1)+" km")
+                                );})
+                            ),
+                            nearby.length>25&&e("div",{style:{textAlign:"center",fontSize:"12px",color:"#9CA3AF",padding:"8px"}},"…and "+(nearby.length-25)+" more")
                         )
                     )
-                )
-            );
-        }
+                );
+            }
 
-        function NationalPanel({ data }) {
-            if (!data) return null;
-            const counts = data.designation_counts || {};
-            const types = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-            return React.createElement("div", { style: { backgroundColor: "#fff", borderRadius: "16px", border: "1px solid #E5E7EB", boxShadow: "0 1px 3px rgba(0,0,0,0.04)", overflow: "hidden" }},
-                React.createElement("div", { style: { padding: "16px 20px 12px", borderBottom: "1px solid #F3F4F6" }},
-                    React.createElement("h2", { style: { margin: 0, fontSize: "16px", fontWeight: 700, color: "#1B4332" }}, "🏴󠁧󠁢󠁳󠁣󠁴󠁿 Protected Sites Across Scotland"),
-                    React.createElement("p", { style: { margin: "2px 0 0", fontSize: "12px", color: "#9CA3AF" }},
-                        "Source: NatureScot GeoJSON downloads · Processed " + (data.last_processed ? new Date(data.last_processed).toLocaleDateString() : "recently"))
-                ),
-                React.createElement("div", { style: { padding: "20px" }},
-                    React.createElement("div", { style: { display: "flex", gap: "12px", flexWrap: "wrap", marginBottom: "16px" }},
-                        types.map(([type, count]) =>
-                            React.createElement("div", { key: type, style: { display: "flex", alignItems: "center", gap: "8px", padding: "10px 16px", borderRadius: "10px", backgroundColor: "#F0FFF4", border: "1px solid #D1FAE5" }},
-                                React.createElement(DesignationBadge, { type }),
-                                React.createElement("span", { style: { fontSize: "22px", fontWeight: 700, color: "#1B4332", fontFamily: "'JetBrains Mono', monospace" }}, count.toLocaleString())
-                            )
-                        )
+            // Species panel
+            function renderSpecies(){
+                if(!location)return null;
+                var chartData=(speciesGroups||[]).slice(0,12).map(function(g){return{name:g.name.length>14?g.name.slice(0,13)+"…":g.name,fullName:g.name,species:g.speciesCount||g.count,records:g.count};});
+                var totalSp=(speciesGroups||[]).reduce(function(s,g){return s+(g.speciesCount||0);},0);
+                var totalRec=(speciesGroups||[]).reduce(function(s,g){return s+g.count;},0);
+
+                return e("div",{className:"fade-in",style:{backgroundColor:"#fff",borderRadius:"16px",border:"1px solid #E5E7EB",boxShadow:"0 1px 3px rgba(0,0,0,0.04)",overflow:"hidden"}},
+                    e("div",{style:{padding:"16px 20px 12px",borderBottom:"1px solid #F3F4F6"}},
+                        e("h2",{style:{margin:0,fontSize:"16px",fontWeight:700,color:"#1B4332"}},"🦅 Species Recorded Nearby"),
+                        e("p",{style:{margin:"2px 0 0",fontSize:"12px",color:"#9CA3AF"}},"Live data from the NBN Atlas within "+radius+"km")
                     ),
-                    React.createElement("div", { style: { fontSize: "14px", fontWeight: 600, color: "#1B4332" }},
-                        (data.total_sites || 0).toLocaleString() + " total designated sites"),
-                    data.data_sources?.protected_sites &&
-                        React.createElement("div", { style: { marginTop: "8px", fontSize: "11px", color: "#9CA3AF" }}, data.data_sources.protected_sites.attribution)
-                )
-            );
-        }
-
-        function NearbySitesPanel({ sites, lat, lon, radius, onRadiusChange }) {
-            if (!sites) return null;
-            const nearby = sites.filter(s => s.centroid_lat && s.centroid_lon)
-                .map(s => ({ ...s, distance: haversineKm(lat, lon, s.centroid_lat, s.centroid_lon) }))
-                .filter(s => s.distance <= radius).sort((a, b) => a.distance - b.distance);
-            const byType = {};
-            nearby.forEach(s => { byType[s.type] = (byType[s.type] || 0) + 1; });
-
-            return React.createElement("div", { style: { backgroundColor: "#fff", borderRadius: "16px", border: "1px solid #E5E7EB", boxShadow: "0 1px 3px rgba(0,0,0,0.04)", overflow: "hidden" }},
-                React.createElement("div", { style: { padding: "16px 20px 12px", borderBottom: "1px solid #F3F4F6", display: "flex", alignItems: "center", justifyContent: "space-between" }},
-                    React.createElement("div", null,
-                        React.createElement("h2", { style: { margin: 0, fontSize: "16px", fontWeight: 700, color: "#1B4332" }}, "📍 Protected Sites Nearby"),
-                        React.createElement("p", { style: { margin: "2px 0 0", fontSize: "12px", color: "#9CA3AF" }},
-                            nearby.length + " site" + (nearby.length !== 1 ? "s" : "") + " within " + radius + "km · Source: NatureScot open data")
-                    ),
-                    React.createElement("select", { value: radius, onChange: (e) => onRadiusChange(Number(e.target.value)),
-                        style: { padding: "4px 8px", borderRadius: "6px", border: "1px solid #D1D5DB", fontSize: "12px", color: "#374151", cursor: "pointer" }},
-                        [2,5,10,20].map(v => React.createElement("option", { key: v, value: v }, v + " km"))
-                    )
-                ),
-                React.createElement("div", { style: { padding: "16px 20px" }},
-                    nearby.length === 0
-                        ? React.createElement("div", { style: { padding: "20px", textAlign: "center", color: "#6B7280", fontStyle: "italic" }},
-                            "No designated sites found within " + radius + "km. Try expanding the search radius.")
-                        : React.createElement(React.Fragment, null,
-                            React.createElement("div", { style: { display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "12px" }},
-                                Object.entries(byType).map(([type, count]) =>
-                                    React.createElement("div", { key: type, style: { display: "flex", alignItems: "center", gap: "5px", padding: "3px 8px", borderRadius: "16px", backgroundColor: "#F0FFF4", border: "1px solid #D1FAE5", fontSize: "12px" }},
-                                        React.createElement(DesignationBadge, { type }),
-                                        React.createElement("span", { style: { fontWeight: 600, color: "#1B4332" }}, count)
+                    e("div",{style:{padding:"20px"}},
+                        speciesLoading?e("div",{style:{padding:"40px",textAlign:"center",color:"#6B7280"}},"Loading species records from NBN Atlas…")
+                        :speciesError?e("div",{style:{padding:"24px",textAlign:"center",color:"#DC2626",fontSize:"13px"}},speciesError)
+                        :speciesGroups&&speciesGroups.length>0?e(React.Fragment,null,
+                            // Stats cards
+                            e("div",{style:{display:"flex",gap:"16px",marginBottom:"20px",flexWrap:"wrap"}},
+                                [{l:"Species recorded",v:totalSp.toLocaleString(),bg:"linear-gradient(135deg,#1B4332,#2D6A4F)",c:"#fff"},
+                                 {l:"Total records",v:totalRec.toLocaleString(),bg:"linear-gradient(135deg,#40916C,#52B788)",c:"#fff"},
+                                 {l:"Taxonomic groups",v:speciesGroups.length,bg:"linear-gradient(135deg,#74C69D,#95D5B2)",c:"#1B4332"}
+                                ].map(function(s,i){return e("div",{key:i,style:{padding:"12px 20px",borderRadius:"12px",background:s.bg,color:s.c,flex:1,minWidth:140}},
+                                    e("div",{style:{fontSize:"28px",fontWeight:700,fontFamily:"'JetBrains Mono',monospace"}},s.v),
+                                    e("div",{style:{fontSize:"12px",opacity:0.8,marginTop:2}},s.l));})
+                            ),
+                            // Bar chart
+                            e("div",{style:{width:"100%",height:Math.max(280,chartData.length*32)}},
+                                e(ResponsiveContainer,{width:"100%",height:"100%"},
+                                    e(BarChart,{data:chartData,layout:"vertical",margin:{left:10,right:30,top:5,bottom:5}},
+                                        e(XAxis,{type:"number",tick:{fontSize:12,fill:"#6B7280"},axisLine:false,tickLine:false}),
+                                        e(YAxis,{type:"category",dataKey:"name",width:120,tick:{fontSize:12,fill:"#374151"},axisLine:false,tickLine:false}),
+                                        e(Tooltip,{content:function(p){
+                                            if(!p.active||!p.payload||!p.payload[0])return null;
+                                            var d=p.payload[0].payload;
+                                            return e("div",{style:{background:"#fff",border:"1px solid #E5E7EB",borderRadius:"8px",padding:"10px 14px",boxShadow:"0 4px 12px rgba(0,0,0,0.1)",fontSize:"13px"}},
+                                                e("div",{style:{fontWeight:700,color:"#1B4332"}},(ICONS[d.fullName]||"📋")+" "+d.fullName),
+                                                e("div",{style:{color:"#6B7280",marginTop:4}},d.species+" species · "+d.records.toLocaleString()+" records"));
+                                        }}),
+                                        e(Bar,{dataKey:"species",radius:[0,6,6,0],cursor:"pointer",onClick:function(d){handleGroupSelect(d.fullName);}},
+                                            chartData.map(function(d,i){return e(Cell,{key:i,fill:d.fullName===selectedGroup?"#1B4332":"#52B788"});}))
                                     )
                                 )
                             ),
-                            React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: "6px" }},
-                                nearby.slice(0, 25).map((site, i) =>
-                                    React.createElement("div", { key: site.name + "-" + site.type + "-" + i, style: {
-                                        display: "flex", alignItems: "center", justifyContent: "space-between",
-                                        padding: "10px 14px", borderRadius: "8px",
-                                        backgroundColor: i % 2 === 0 ? "#FAFDF7" : "#fff", border: "1px solid #E5E7EB",
-                                    }},
-                                        React.createElement("div", { style: { display: "flex", alignItems: "center", gap: "10px", flex: 1, minWidth: 0 }},
-                                            React.createElement(DesignationBadge, { type: site.type }),
-                                            React.createElement("div", { style: { minWidth: 0 }},
-                                                React.createElement("div", { style: { fontWeight: 600, color: "#1B4332", fontSize: "13px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}, site.name),
-                                                site.area_ha && React.createElement("div", { style: { fontSize: "11px", color: "#9CA3AF" }}, site.area_ha.toLocaleString() + " ha")
-                                            )
-                                        ),
-                                        React.createElement("div", { style: { fontSize: "13px", fontWeight: 600, color: "#40916C", whiteSpace: "nowrap", fontFamily: "'JetBrains Mono', monospace" }},
-                                            site.distance.toFixed(1) + " km")
-                                    )
+                            e("div",{style:{fontSize:"12px",color:"#9CA3AF",textAlign:"center",marginTop:4}},"Click a bar to view species list"),
+                            // Species list
+                            selectedGroup&&e("div",{style:{marginTop:"20px",border:"1px solid #D1FAE5",borderRadius:"12px",overflow:"hidden",backgroundColor:"#FAFDF7"}},
+                                e("div",{style:{padding:"12px 16px",backgroundColor:"#D8F3DC",display:"flex",alignItems:"center",justifyContent:"space-between"}},
+                                    e("span",{style:{fontWeight:700,color:"#1B4332",fontSize:"14px"}},(ICONS[selectedGroup]||"📋")+" "+selectedGroup),
+                                    e("button",{onClick:function(){setSelectedGroup(null);setSpeciesList(null);},style:{background:"none",border:"none",cursor:"pointer",fontSize:"18px",color:"#6B7280"}},"✕")
                                 ),
-                                nearby.length > 25 && React.createElement("div", { style: { textAlign: "center", fontSize: "12px", color: "#9CA3AF", padding: "8px" }},
-                                    "…and " + (nearby.length - 25) + " more")
+                                loadingSpecies?e("div",{style:{padding:"24px",textAlign:"center",color:"#6B7280"}},"Loading species…")
+                                :speciesList&&speciesList.length>0?e("div",{style:{maxHeight:320,overflowY:"auto"}},
+                                    speciesList.map(function(sp,i){return e("div",{key:i,style:{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 16px",borderBottom:i<speciesList.length-1?"1px solid #E5E7EB":"none",backgroundColor:i%2===0?"#fff":"#FAFDF7"}},
+                                        e("div",null,e("div",{style:{fontWeight:600,color:"#1B4332",fontSize:"13px"}},sp.name),e("div",{style:{fontSize:"11px",color:"#9CA3AF",fontStyle:"italic"}},sp.scientificName)),
+                                        e("div",{style:{fontFamily:"'JetBrains Mono',monospace",fontSize:"13px",fontWeight:600,color:"#40916C"}},sp.count));})
+                                ):e("div",{style:{padding:"24px",textAlign:"center",color:"#6B7280"}},"No species data available.")
                             )
                         )
-                )
-            );
-        }
-
-        function SpeciesPanel({ groups, onSelectGroup, selectedGroup, speciesList, loadingSpecies }) {
-            const chartData = groups.slice(0, 12).map(g => ({
-                name: g.name.length > 14 ? g.name.slice(0, 13) + "…" : g.name,
-                fullName: g.name, species: g.speciesCount || g.count, records: g.count,
-            }));
-            const totalSpecies = groups.reduce((s, g) => s + (g.speciesCount || 0), 0);
-            const totalRecords = groups.reduce((s, g) => s + g.count, 0);
-
-            return React.createElement("div", null,
-                React.createElement("div", { style: { display: "flex", gap: "16px", marginBottom: "20px", flexWrap: "wrap" }},
-                    [
-                        { label: "Species recorded", value: totalSpecies.toLocaleString(), bg: "linear-gradient(135deg, #1B4332, #2D6A4F)", color: "#fff" },
-                        { label: "Total records", value: totalRecords.toLocaleString(), bg: "linear-gradient(135deg, #40916C, #52B788)", color: "#fff" },
-                        { label: "Taxonomic groups", value: groups.length, bg: "linear-gradient(135deg, #74C69D, #95D5B2)", color: "#1B4332" },
-                    ].map((s, i) => React.createElement("div", { key: i, style: { padding: "12px 20px", borderRadius: "12px", background: s.bg, color: s.color, flex: 1, minWidth: 140 }},
-                        React.createElement("div", { style: { fontSize: "28px", fontWeight: 700, fontFamily: "'JetBrains Mono', monospace" }}, s.value),
-                        React.createElement("div", { style: { fontSize: "12px", opacity: 0.8, marginTop: 2 }}, s.label)
-                    ))
-                ),
-                React.createElement("div", { style: { width: "100%", height: Math.max(280, chartData.length * 32) }},
-                    React.createElement(ResponsiveContainer, { width: "100%", height: "100%" },
-                        React.createElement(BarChart, { data: chartData, layout: "vertical", margin: { left: 10, right: 30, top: 5, bottom: 5 }},
-                            React.createElement(XAxis, { type: "number", tick: { fontSize: 12, fill: "#6B7280" }, axisLine: false, tickLine: false }),
-                            React.createElement(YAxis, { type: "category", dataKey: "name", width: 120, tick: { fontSize: 12, fill: "#374151" }, axisLine: false, tickLine: false }),
-                            React.createElement(Tooltip, { content: ({ active, payload }) => {
-                                if (!active || !payload?.[0]) return null;
-                                const d = payload[0].payload;
-                                return React.createElement("div", { style: { background: "#fff", border: "1px solid #E5E7EB", borderRadius: "8px", padding: "10px 14px", boxShadow: "0 4px 12px rgba(0,0,0,0.1)", fontSize: "13px" }},
-                                    React.createElement("div", { style: { fontWeight: 700, color: "#1B4332" }}, (GROUP_ICONS[d.fullName] || "📋") + " " + d.fullName),
-                                    React.createElement("div", { style: { color: "#6B7280", marginTop: 4 }}, d.species + " species · " + d.records.toLocaleString() + " records")
-                                );
-                            }}),
-                            React.createElement(Bar, { dataKey: "species", radius: [0, 6, 6, 0], cursor: "pointer", onClick: (d) => onSelectGroup(d.fullName) },
-                                chartData.map((d, i) => React.createElement(Cell, { key: i, fill: d.fullName === selectedGroup ? "#1B4332" : "#52B788" }))
-                            )
-                        )
+                        :speciesGroups&&speciesGroups.length===0?e("div",{style:{padding:"24px",textAlign:"center",color:"#6B7280"}},"No species records found nearby.")
+                        :null
                     )
-                ),
-                React.createElement("div", { style: { fontSize: "12px", color: "#9CA3AF", textAlign: "center", marginTop: 4 }}, "Click a bar to view species list"),
-                selectedGroup && React.createElement("div", { style: { marginTop: "20px", border: "1px solid #D1FAE5", borderRadius: "12px", overflow: "hidden", backgroundColor: "#FAFDF7" }},
-                    React.createElement("div", { style: { padding: "12px 16px", backgroundColor: "#D8F3DC", display: "flex", alignItems: "center", justifyContent: "space-between" }},
-                        React.createElement("span", { style: { fontWeight: 700, color: "#1B4332", fontSize: "14px" }}, (GROUP_ICONS[selectedGroup] || "📋") + " " + selectedGroup),
-                        React.createElement("button", { onClick: () => onSelectGroup(null), style: { background: "none", border: "none", cursor: "pointer", fontSize: "18px", color: "#6B7280" }}, "✕")
-                    ),
-                    loadingSpecies
-                        ? React.createElement("div", { style: { padding: "24px", textAlign: "center", color: "#6B7280" }}, "Loading species…")
-                        : speciesList && speciesList.length > 0
-                            ? React.createElement("div", { style: { maxHeight: 320, overflowY: "auto" }},
-                                speciesList.map((sp, i) => React.createElement("div", { key: i, style: {
-                                    display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px",
-                                    borderBottom: i < speciesList.length - 1 ? "1px solid #E5E7EB" : "none",
-                                    backgroundColor: i % 2 === 0 ? "#fff" : "#FAFDF7",
-                                }},
-                                    React.createElement("div", null,
-                                        React.createElement("div", { style: { fontWeight: 600, color: "#1B4332", fontSize: "13px" }}, sp.name),
-                                        React.createElement("div", { style: { fontSize: "11px", color: "#9CA3AF", fontStyle: "italic" }}, sp.scientificName)
-                                    ),
-                                    React.createElement("div", { style: { fontFamily: "'JetBrains Mono', monospace", fontSize: "13px", fontWeight: 600, color: "#40916C" }}, sp.count)
-                                ))
-                            )
-                            : React.createElement("div", { style: { padding: "24px", textAlign: "center", color: "#6B7280" }}, "No species data available.")
-                )
-            );
-        }
+                );
+            }
 
-        function App() {
-            const [apiStatus, setApiStatus] = useState(null);
-            const [nationalData, setNationalData] = useState(null);
-            const [allSites, setAllSites] = useState(null);
-            const [postcode, setPostcode] = useState("");
-            const [location, setLocation] = useState(null);
-            const [loading, setLoading] = useState(false);
-            const [error, setError] = useState(null);
-            const [speciesGroups, setSpeciesGroups] = useState(null);
-            const [selectedGroup, setSelectedGroup] = useState(null);
-            const [speciesList, setSpeciesList] = useState(null);
-            const [loadingSpecies, setLoadingSpecies] = useState(false);
-            const [speciesLoading, setSpeciesLoading] = useState(false);
-            const [speciesError, setSpeciesError] = useState(null);
-            const [radius, setRadius] = useState(5);
-
-            useEffect(() => {
-                (async () => {
-                    const status = { github: false, postcodes: false, nbn: false };
-                    try { setNationalData(await fetchJSON(GITHUB_DATA_BASE + "/national.json")); status.github = true; } catch {}
-                    try { setAllSites(await fetchJSON(GITHUB_DATA_BASE + "/sites.json")); if (!status.github) status.github = true; } catch {}
-                    try { const r = await fetch("https://api.postcodes.io/postcodes/EH11RE", { signal: AbortSignal.timeout(5000) }); status.postcodes = r.ok; } catch {}
-                    try { const r = await fetch("https://records-ws.nbnatlas.org/explore/groups?lat=55.95&lon=-3.19&radius=1", { signal: AbortSignal.timeout(5000) }); status.nbn = r.ok; } catch {}
-                    setApiStatus(status);
-                })();
-            }, []);
-
-            const handleSearch = useCallback(async () => {
-                const clean = postcode.replace(/\s/g, "").toUpperCase();
-                if (clean.length < 5) { setError("Please enter a full Scottish postcode (e.g. EH1 1RE)"); return; }
-                if (!SCOTTISH_PREFIXES.includes(clean.slice(0, 2)) && !/^G\d/.test(clean)) { setError("This doesn't look like a Scottish postcode."); return; }
-                setError(null); setLoading(true); setSpeciesGroups(null); setSelectedGroup(null); setSpeciesList(null); setSpeciesError(null);
-                try {
-                    const res = await fetch("https://api.postcodes.io/postcodes/" + clean);
-                    if (!res.ok) throw new Error("Invalid postcode");
-                    const data = await res.json();
-                    if (data.result.country !== "Scotland") throw new Error("Not in Scotland");
-                    const loc = { lat: data.result.latitude, lon: data.result.longitude, admin: data.result.admin_district, constituency: data.result.parliamentary_constituency, postcode: data.result.postcode };
-                    setLocation(loc); setLoading(false);
-                    setSpeciesLoading(true);
-                    try {
-                        const r = await fetch("https://records-ws.nbnatlas.org/explore/groups?lat=" + loc.lat + "&lon=" + loc.lon + "&radius=" + radius + "&fq=country:Scotland");
-                        if (!r.ok) throw new Error();
-                        setSpeciesGroups((await r.json()).filter(g => g.count > 0).map(g => ({ name: g.name, count: g.count, speciesCount: g.speciesCount })).sort((a, b) => b.count - a.count));
-                    } catch { setSpeciesError("Could not load species data from the NBN Atlas."); }
-                    finally { setSpeciesLoading(false); }
-                } catch (e) { setLoading(false); setError(e.message === "Not in Scotland" ? "This postcode isn't in Scotland." : e.message === "Invalid postcode" ? "Postcode not recognised." : "Could not look up postcode. Check your internet connection."); }
-            }, [postcode, radius]);
-
-            const handleGroupSelect = useCallback(async (groupName) => {
-                if (groupName === selectedGroup) { setSelectedGroup(null); setSpeciesList(null); return; }
-                setSelectedGroup(groupName); setLoadingSpecies(true);
-                try {
-                    const r = await fetch("https://records-ws.nbnatlas.org/explore/group/" + encodeURIComponent(groupName) + "?lat=" + location.lat + "&lon=" + location.lon + "&radius=" + radius + "&pageSize=20&fq=country:Scotland");
-                    if (!r.ok) throw new Error();
-                    setSpeciesList((await r.json()).map(s => ({ name: s.commonName || s.name, scientificName: s.name, count: s.count })));
-                } catch { setSpeciesList([]); }
-                setLoadingSpecies(false);
-            }, [location, selectedGroup, radius]);
-
-            const canSearch = apiStatus?.postcodes;
-
-            return React.createElement("div", { style: { minHeight: "100vh", background: "linear-gradient(170deg, #F0FFF4 0%, #ECFDF5 30%, #F9FAFB 100%)", fontFamily: "'Instrument Sans', 'Segoe UI', system-ui, sans-serif" }},
-
+            // Main render
+            return e("div",{style:{minHeight:"100vh",background:"linear-gradient(170deg,#F0FFF4 0%,#ECFDF5 30%,#F9FAFB 100%)"}},
                 // Header
-                React.createElement("div", { style: { background: "linear-gradient(135deg, #1B4332 0%, #2D6A4F 60%, #40916C 100%)", padding: "32px 24px 28px", color: "#fff" }},
-                    React.createElement("div", { style: { maxWidth: 900, margin: "0 auto" }},
-                        React.createElement("h1", { style: { margin: "0 0 6px", fontSize: "26px", fontWeight: 700, letterSpacing: "-0.5px" }}, "Scotland Nature Dashboard"),
-                        React.createElement("p", { style: { margin: 0, fontSize: "14px", opacity: 0.8 }}, "Explore biodiversity and protected sites near any Scottish postcode"),
-                        canSearch && React.createElement("div", { style: { display: "flex", gap: "10px", marginTop: "20px", maxWidth: 480 }},
-                            React.createElement("input", { type: "text", value: postcode, onChange: (e) => setPostcode(e.target.value.toUpperCase()),
-                                onKeyDown: (e) => e.key === "Enter" && handleSearch(), placeholder: "e.g. EH1 1RE",
-                                style: { flex: 1, padding: "12px 16px", borderRadius: "10px", border: "2px solid rgba(255,255,255,0.25)", backgroundColor: "rgba(255,255,255,0.12)", color: "#fff", fontSize: "16px", fontWeight: 600, letterSpacing: "1px", fontFamily: "'JetBrains Mono', monospace" }}),
-                            React.createElement("button", { onClick: handleSearch, disabled: loading,
-                                style: { padding: "12px 24px", borderRadius: "10px", border: "none", backgroundColor: "#D8F3DC", color: "#1B4332", fontWeight: 700, fontSize: "14px", cursor: loading ? "wait" : "pointer", whiteSpace: "nowrap" }},
-                                loading ? "Searching…" : "Explore")
+                e("div",{style:{background:"linear-gradient(135deg,#1B4332 0%,#2D6A4F 60%,#40916C 100%)",padding:"32px 24px 28px",color:"#fff"}},
+                    e("div",{style:{maxWidth:900,margin:"0 auto"}},
+                        e("h1",{style:{margin:"0 0 6px",fontSize:"26px",fontWeight:700,letterSpacing:"-0.5px"}},"Scotland Nature Dashboard"),
+                        e("p",{style:{margin:0,fontSize:"14px",opacity:0.8}},"Explore biodiversity and protected sites near any Scottish postcode"),
+                        canSearch&&e("div",{style:{display:"flex",gap:"10px",marginTop:"20px",maxWidth:480}},
+                            e("input",{type:"text",value:postcode,onChange:function(ev){setPostcode(ev.target.value.toUpperCase());},onKeyDown:function(ev){if(ev.key==="Enter")handleSearch();},placeholder:"e.g. EH1 1RE",
+                                style:{flex:1,padding:"12px 16px",borderRadius:"10px",border:"2px solid rgba(255,255,255,0.25)",backgroundColor:"rgba(255,255,255,0.12)",color:"#fff",fontSize:"16px",fontWeight:600,letterSpacing:"1px",fontFamily:"'JetBrains Mono',monospace"}}),
+                            e("button",{onClick:handleSearch,disabled:loading,style:{padding:"12px 24px",borderRadius:"10px",border:"none",backgroundColor:"#D8F3DC",color:"#1B4332",fontWeight:700,fontSize:"14px",cursor:loading?"wait":"pointer",whiteSpace:"nowrap"}},loading?"Searching…":"Explore")
                         ),
-                        error && React.createElement("div", { style: { marginTop: "12px", padding: "8px 14px", borderRadius: "8px", backgroundColor: "rgba(239,68,68,0.15)", color: "#FCA5A5", fontSize: "13px", maxWidth: 480 }}, error),
-                        location && React.createElement("div", { className: "fade-in", style: { marginTop: "12px", fontSize: "13px", opacity: 0.85, display: "flex", alignItems: "center", gap: "6px" }},
-                            "📍 ", React.createElement("strong", null, location.postcode), " · ", location.admin, location.constituency ? " · " + location.constituency : "")
+                        error&&e("div",{style:{marginTop:"12px",padding:"8px 14px",borderRadius:"8px",backgroundColor:"rgba(239,68,68,0.15)",color:"#FCA5A5",fontSize:"13px",maxWidth:480}},error),
+                        location&&e("div",{className:"fade-in",style:{marginTop:"12px",fontSize:"13px",opacity:0.85,display:"flex",alignItems:"center",gap:"6px"}},
+                            "📍 ",e("strong",null,location.postcode)," · ",location.admin,location.constituency?" · "+location.constituency:"")
                     )
                 ),
-
                 // Content
-                React.createElement("div", { style: { maxWidth: 900, margin: "0 auto", padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }},
-                    React.createElement(StatusBanner, { status: apiStatus }),
-                    nationalData && !location && React.createElement(NationalPanel, { data: nationalData }),
-
-                    location && React.createElement(React.Fragment, null,
-                        allSites && React.createElement(NearbySitesPanel, { sites: allSites, lat: location.lat, lon: location.lon, radius, onRadiusChange: setRadius }),
-
-                        React.createElement("div", { className: "fade-in", style: { backgroundColor: "#fff", borderRadius: "16px", border: "1px solid #E5E7EB", boxShadow: "0 1px 3px rgba(0,0,0,0.04)", overflow: "hidden" }},
-                            React.createElement("div", { style: { padding: "16px 20px 12px", borderBottom: "1px solid #F3F4F6" }},
-                                React.createElement("h2", { style: { margin: 0, fontSize: "16px", fontWeight: 700, color: "#1B4332" }}, "🦅 Species Recorded Nearby"),
-                                React.createElement("p", { style: { margin: "2px 0 0", fontSize: "12px", color: "#9CA3AF" }}, "Live data from the NBN Atlas within " + radius + "km")
-                            ),
-                            React.createElement("div", { style: { padding: "20px" }},
-                                speciesLoading ? React.createElement("div", { style: { padding: "40px", textAlign: "center", color: "#6B7280" }}, "Loading species records…")
-                                : speciesError ? React.createElement("div", { style: { padding: "24px", textAlign: "center", color: "#DC2626", fontSize: "13px" }}, speciesError)
-                                : speciesGroups?.length > 0 ? React.createElement(SpeciesPanel, { groups: speciesGroups, onSelectGroup: handleGroupSelect, selectedGroup, speciesList, loadingSpecies })
-                                : speciesGroups?.length === 0 ? React.createElement("div", { style: { padding: "24px", textAlign: "center", color: "#6B7280" }}, "No species records found nearby.")
-                                : null
-                            )
-                        )
+                e("div",{style:{maxWidth:900,margin:"0 auto",padding:"24px",display:"flex",flexDirection:"column",gap:"20px"}},
+                    renderStatus(),
+                    renderNational(),
+                    renderNearbySites(),
+                    renderSpecies(),
+                    !location&&!loading&&canSearch&&e("div",{style:{display:"flex",gap:"12px",justifyContent:"center",flexWrap:"wrap",marginTop:"20px"}},
+                        ["EH1 1RE","G1 1XQ","AB10 1AF","IV2 3BL","DD1 4HN"].map(function(pc){return e("button",{key:pc,onClick:function(){setPostcode(pc);},
+                            style:{padding:"8px 16px",borderRadius:"8px",border:"1px solid #D1FAE5",backgroundColor:"#F0FFF4",color:"#2D6A4F",fontWeight:600,fontSize:"13px",cursor:"pointer",fontFamily:"'JetBrains Mono',monospace"}},pc);})
                     ),
-
-                    !location && !loading && canSearch && React.createElement("div", { style: { display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap", marginTop: "20px" }},
-                        ["EH1 1RE", "G1 1XQ", "AB10 1AF", "IV2 3BL", "DD1 4HN"].map(pc =>
-                            React.createElement("button", { key: pc, onClick: () => setPostcode(pc),
-                                style: { padding: "8px 16px", borderRadius: "8px", border: "1px solid #D1FAE5", backgroundColor: "#F0FFF4", color: "#2D6A4F", fontWeight: 600, fontSize: "13px", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace" }}, pc)
-                        )
-                    ),
-
                     // Attribution
-                    React.createElement("div", { style: { padding: "16px 20px", borderRadius: "12px", backgroundColor: "#F9FAFB", border: "1px solid #E5E7EB", fontSize: "11px", color: "#9CA3AF", lineHeight: 1.6 }},
-                        React.createElement("div", { style: { fontWeight: 600, color: "#6B7280", marginBottom: "4px" }}, "Data sources & attribution"),
-                        React.createElement("div", null,
-                            "Protected sites: NatureScot GeoJSON downloads — Contains NatureScot information licensed under the Open Government Licence v3.0. ",
-                            "Species data: NBN Atlas (live API, CC-BY/CC-BY-NC). ",
-                            "Postcodes: Postcodes.io — contains OS data © Crown copyright."
+                    e("div",{style:{padding:"16px 20px",borderRadius:"12px",backgroundColor:"#F9FAFB",border:"1px solid #E5E7EB",fontSize:"11px",color:"#9CA3AF",lineHeight:1.6}},
+                        e("div",{style:{fontWeight:600,color:"#6B7280",marginBottom:"4px"}},"Data sources & attribution"),
+                        e("div",null,
+                            "Protected sites: ",e("a",{href:"https://gis-downloads.nature.scot/",style:{color:"#40916C"}},"NatureScot GeoJSON downloads")," — Contains NatureScot information licensed under the Open Government Licence v3.0. ",
+                            "Species data: ",e("a",{href:"https://nbnatlas.org/",style:{color:"#40916C"}},"NBN Atlas")," (live API, CC-BY/CC-BY-NC). ",
+                            "Postcodes: ",e("a",{href:"https://postcodes.io/",style:{color:"#40916C"}},"Postcodes.io")," — contains OS data © Crown copyright."
                         )
                     )
                 )
             );
         }
 
-        ReactDOM.render(React.createElement(App), document.getElementById("root"));
+        ReactDOM.createRoot(document.getElementById("root")).render(e(App));
+    });
     </script>
 </body>
 </html>
