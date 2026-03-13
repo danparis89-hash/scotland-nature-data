@@ -1,12 +1,12 @@
 {
   "designation_counts": {
-    "SSSI": 15877,
-    "SAC": 2593,
-    "SPA": 2477,
-    "NNR": 747,
-    "Ramsar": 2271
+    "SSSI": 1422,
+    "SAC": 253,
+    "SPA": 164,
+    "NNR": 48,
+    "Ramsar": 51
   },
-  "total_sites": 23965,
+  "total_sites": 1938,
   "data_sources": {
     "protected_sites": {
       "provider": "NatureScot",
