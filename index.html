@@ -150,9 +150,17 @@
             }
 
             // Nearby sites
+            function siteApproxRadiusKm(area_ha){
+                if(!area_ha||area_ha<=0)return 0;
+                return Math.sqrt((area_ha*10000)/Math.PI)/1000;
+            }
             function renderNearbySites(){
                 if(!allSites||!location)return null;
-                var nearby=allSites.filter(function(s){return s.centroid_lat&&s.centroid_lon;}).map(function(s){return Object.assign({},s,{distance:haversine(location.lat,location.lon,s.centroid_lat,s.centroid_lon)});}).filter(function(s){return s.distance<=radius;}).sort(function(a,b){return a.distance-b.distance;});
+                var nearby=allSites.filter(function(s){return s.centroid_lat&&s.centroid_lon;}).map(function(s){
+                    var centroidDist=haversine(location.lat,location.lon,s.centroid_lat,s.centroid_lon);
+                    var boundaryDist=Math.max(0,centroidDist-siteApproxRadiusKm(s.area_ha));
+                    return Object.assign({},s,{distance:boundaryDist});
+                }).filter(function(s){return s.distance<=radius;}).sort(function(a,b){return a.distance-b.distance;});
                 var byType={};nearby.forEach(function(s){byType[s.type]=(byType[s.type]||0)+1;});
                 return e("div",{style:{backgroundColor:"#fff",borderRadius:"16px",border:"1px solid #E5E7EB",boxShadow:"0 1px 3px rgba(0,0,0,0.04)",overflow:"hidden"}},
                     e("div",{style:{padding:"16px 20px 12px",borderBottom:"1px solid #F3F4F6",display:"flex",alignItems:"center",justifyContent:"space-between"}},
@@ -179,7 +187,7 @@
                                             s.area_ha&&e("div",{style:{fontSize:"11px",color:"#9CA3AF"}},s.area_ha.toLocaleString()+" ha")
                                         )
                                     ),
-                                    e("div",{style:{fontSize:"13px",fontWeight:600,color:"#40916C",whiteSpace:"nowrap",fontFamily:"'JetBrains Mono',monospace"}},s.distance.toFixed(1)+" km")
+                                    e("div",{style:{fontSize:"13px",fontWeight:600,color:"#40916C",whiteSpace:"nowrap",fontFamily:"'JetBrains Mono',monospace"}},s.distance===0?"within site":s.distance.toFixed(1)+" km")
                                 );})
                             ),
                             nearby.length>25&&e("div",{style:{textAlign:"center",fontSize:"12px",color:"#9CA3AF",padding:"8px"}},"…and "+(nearby.length-25)+" more")
