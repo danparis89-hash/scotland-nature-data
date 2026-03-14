@@ -73,17 +73,20 @@ def site_radius_km(area_ha):
 def councils_for_site(lat, lon, area_ha):
     """Return every council whose centroid lies within the site's footprint.
 
-    A 1.5× multiplier on the area-derived radius is applied so that large
-    irregular sites (estuaries, long sea lochs) whose circular approximation
-    undershoots are still attributed to councils along their fringes.  For
-    small sites the equivalent-circle radius is only 1–3 km, far smaller than
-    the separation between any two council centroids, so the multiplier does
-    not cause spurious extra assignments there.
+    Effective radius = min(site_radius × 1.2, 40 km).
 
-    Falls back to single nearest-centroid for any site whose radius contains
-    no council centroid even after the multiplier.
+    The 1.2× multiplier gives a small amount of extra reach for elongated or
+    coastal sites whose circular approximation undershoots.  The 40 km cap
+    prevents very large sites (e.g. Firth of Tay, 715k ha → natural radius
+    ~48 km) from reaching council centroids that are genuinely distant.
+    At 40 km cap the Firth of Forth (natural radius ~27 km, 1.2× = 33 km)
+    still captures East Lothian (32.5 km away) while the Firth of Tay is
+    capped before reaching East Lothian (54 km away).
+
+    Falls back to single nearest-centroid for any site whose effective radius
+    contains no council centroid.
     """
-    radius = site_radius_km(area_ha) * 1.5
+    radius = min(site_radius_km(area_ha) * 1.2, 40.0)
     inside = [c for c, (clat, clon) in COUNCIL_CENTROIDS.items()
               if haversine(lat, lon, clat, clon) <= radius]
     return inside if inside else [nearest_council(lat, lon)]
