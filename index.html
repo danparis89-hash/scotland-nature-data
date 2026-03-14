@@ -16,6 +16,7 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         .fade-in { animation: fadeIn 0.4s ease-out forwards; }
         input:focus { outline: none; border-color: #40916C !important; box-shadow: 0 0 0 3px rgba(64,145,108,0.15) !important; }
+        button:hover { opacity: 0.88; }
     </style>
 </head>
 <body>
@@ -23,14 +24,13 @@
     <script>
     window.addEventListener("load", function() {
         if (typeof React === "undefined" || typeof ReactDOM === "undefined" || typeof Recharts === "undefined") {
-            document.getElementById("root").innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#c00"><b>Error:</b> A required script failed to load (React=' + (typeof React) + ', ReactDOM=' + (typeof ReactDOM) + ', Recharts=' + (typeof Recharts) + '). Check your internet connection and try again.</div>';
+            document.getElementById("root").innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#c00"><b>Error:</b> A required script failed to load. Check your internet connection and try again.</div>';
             return;
         }
         try {
 
         var e = React.createElement;
         var useState = React.useState;
-        var useCallback = React.useCallback;
         var useEffect = React.useEffect;
         var BarChart = Recharts.BarChart;
         var Bar = Recharts.Bar;
@@ -43,7 +43,18 @@
         var GITHUB_DATA = "https://danparis89-hash.github.io/scotland-nature-data/dashboard-data";
         var SCOT_PREFIX = ["AB","DD","DG","EH","FK","HS","IV","KA","KW","KY","ML","PA","PH","TD","ZE"];
         var DESIG_COL = { SSSI:"#2D6A4F", SAC:"#40916C", SPA:"#52B788", NNR:"#74C69D", Ramsar:"#95D5B2" };
-        var ICONS = { Birds:"🐦", Mammals:"🦊", Plants:"🌿", Insects:"🦋", Fungi:"🍄", Amphibians:"🐸", Reptiles:"🦎", Fish:"🐟", "Flowering Plants":"🌸" };
+        var ICONS = {
+            Birds:"🐦", Mammals:"🦊", Plants:"🌿", Insects:"🦋", Fungi:"🍄",
+            Amphibians:"🐸", Reptiles:"🦎", Fish:"🐟", "Flowering Plants":"🌸",
+            Ferns:"🌾", Mosses:"🪨", Molluscs:"🐌", Crustaceans:"🦀", Spiders:"🕷️"
+        };
+        var TABS = [
+            {id:"national", label:"National", icon:"🏴󠁧󠁢󠁳󠁣󠁴󠁿"},
+            {id:"regional", label:"Regional", icon:"🗺️"},
+            {id:"postcode", label:"Postcode", icon:"📮"}
+        ];
+
+        // ── Helpers ──────────────────────────────────────────────────────────
 
         function haversine(lat1,lon1,lat2,lon2){
             var R=6371,dLat=((lat2-lat1)*Math.PI)/180,dLon=((lon2-lon1)*Math.PI)/180;
@@ -51,12 +62,330 @@
             return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
         }
 
-        function Badge(p){ return e("span",{style:{display:"inline-block",padding:"2px 8px",borderRadius:"4px",fontSize:"11px",fontWeight:700,letterSpacing:"0.5px",color:"#fff",backgroundColor:DESIG_COL[p.type]||"#6B7280",fontFamily:"'JetBrains Mono',monospace"}},p.type); }
+        // Approximate circular radius from area so we can measure distance to
+        // boundary rather than centroid (important for large estuarine sites).
+        function siteApproxRadiusKm(area_ha){
+            if(!area_ha||area_ha<=0)return 0;
+            return Math.sqrt((area_ha*10000)/Math.PI)/1000;
+        }
 
-        function App(){
-            var _api=useState(null), apiStatus=_api[0], setApiStatus=_api[1];
-            var _nat=useState(null), natData=_nat[0], setNatData=_nat[1];
-            var _sites=useState(null), allSites=_sites[0], setAllSites=_sites[1];
+        // ── Shared components ─────────────────────────────────────────────────
+
+        function Badge(p){
+            return e("span",{style:{display:"inline-block",padding:"2px 8px",borderRadius:"4px",fontSize:"11px",fontWeight:700,letterSpacing:"0.5px",color:"#fff",backgroundColor:DESIG_COL[p.type]||"#6B7280",fontFamily:"'JetBrains Mono',monospace"}},p.type);
+        }
+
+        function StatusBanner(p){
+            var status=p.status;
+            if(!status) return e("div",{style:{padding:"12px 16px",borderRadius:"10px",backgroundColor:"#F9FAFB",border:"1px solid #E5E7EB",fontSize:"13px",color:"#6B7280",textAlign:"center"}},"Checking data sources…");
+            var probs=[];
+            if(!status.github)probs.push("GitHub Pages data");
+            if(!status.postcodes)probs.push("Postcodes.io");
+            if(!status.nbn)probs.push("NBN Atlas");
+            if(probs.length===0)return null;
+            var allDown=probs.length===3;
+            return e("div",{style:{padding:"16px 20px",borderRadius:"12px",backgroundColor:allDown?"#FEF2F2":"#FFFBEB",border:"1px solid "+(allDown?"#FECACA":"#FDE68A"),fontSize:"13px",lineHeight:1.6}},
+                e("div",{style:{fontWeight:700,color:allDown?"#991B1B":"#92400E",marginBottom:"6px"}},allDown?"Data sources unreachable":"Some data sources unreachable"),
+                e("div",{style:{color:allDown?"#B91C1C":"#A16207"}},allDown?"This dashboard requires internet access.":"Unreachable: "+probs.join(", ")),
+                e("div",{style:{display:"flex",gap:"16px",marginTop:"10px"}},
+                    [["GitHub data",status.github],["Postcodes.io",status.postcodes],["NBN Atlas",status.nbn]].map(function(x){
+                        return e("div",{key:x[0],style:{display:"flex",alignItems:"center",gap:"5px",fontSize:"12px"}},
+                            e("span",{style:{width:8,height:8,borderRadius:"50%",backgroundColor:x[1]?"#22C55E":"#EF4444",display:"inline-block"}}),
+                            e("span",{style:{color:"#374151"}},x[0]));
+                    })
+                )
+            );
+        }
+
+        // ── National page ─────────────────────────────────────────────────────
+
+        function NationalPage(p){
+            var data=p.data;
+            if(!data) return e("div",{style:{padding:"48px",textAlign:"center",color:"#6B7280"}},"Loading national data…");
+            var counts=data.designation_counts||{};
+            var types=Object.entries(counts).sort(function(a,b){return b[1]-a[1];});
+            var chartData=types.map(function(t){return{type:t[0],count:t[1]};});
+            return e("div",{style:{display:"flex",flexDirection:"column",gap:"20px"}},
+                e("div",{style:{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(140px, 1fr))",gap:"12px"}},
+                    types.map(function(t){
+                        return e("div",{key:t[0],style:{padding:"16px 20px",borderRadius:"14px",background:"linear-gradient(135deg,#F0FFF4,#D8F3DC)",border:"1px solid #D1FAE5",textAlign:"center"}},
+                            e(Badge,{type:t[0]}),
+                            e("div",{style:{fontSize:"30px",fontWeight:700,color:"#1B4332",fontFamily:"'JetBrains Mono',monospace",marginTop:"8px"}},t[1].toLocaleString()),
+                            e("div",{style:{fontSize:"11px",color:"#6B7280",marginTop:"2px"}},"designated sites"));
+                    }),
+                    e("div",{style:{padding:"16px 20px",borderRadius:"14px",background:"linear-gradient(135deg,#1B4332,#2D6A4F)",textAlign:"center",display:"flex",flexDirection:"column",justifyContent:"center"}},
+                        e("div",{style:{fontSize:"30px",fontWeight:700,color:"#fff",fontFamily:"'JetBrains Mono',monospace"}},(data.total_sites||0).toLocaleString()),
+                        e("div",{style:{fontSize:"12px",color:"rgba(255,255,255,0.75)",marginTop:"4px"}},"total sites")
+                    )
+                ),
+                e("div",{style:{backgroundColor:"#fff",borderRadius:"16px",border:"1px solid #E5E7EB",padding:"20px"}},
+                    e("h3",{style:{margin:"0 0 16px",fontSize:"14px",fontWeight:700,color:"#1B4332"}},"Sites by designation type"),
+                    e("div",{style:{width:"100%",height:200}},
+                        e(ResponsiveContainer,{width:"100%",height:"100%"},
+                            e(BarChart,{data:chartData,margin:{left:0,right:20,top:5,bottom:5}},
+                                e(XAxis,{dataKey:"type",tick:{fontSize:12,fill:"#374151"},axisLine:false,tickLine:false}),
+                                e(YAxis,{tick:{fontSize:12,fill:"#6B7280"},axisLine:false,tickLine:false}),
+                                e(Tooltip,{content:function(tp){
+                                    if(!tp.active||!tp.payload||!tp.payload[0])return null;
+                                    var d=tp.payload[0].payload;
+                                    return e("div",{style:{background:"#fff",border:"1px solid #E5E7EB",borderRadius:"8px",padding:"10px 14px",fontSize:"13px"}},
+                                        e("div",{style:{fontWeight:700,color:"#1B4332"}},e(Badge,{type:d.type})),
+                                        e("div",{style:{color:"#6B7280",marginTop:4}},d.count.toLocaleString()+" sites"));
+                                }}),
+                                e(Bar,{dataKey:"count",radius:[6,6,0,0]},
+                                    chartData.map(function(d,i){return e(Cell,{key:i,fill:DESIG_COL[d.type]||"#52B788"});})
+                                )
+                            )
+                        )
+                    )
+                ),
+                e("div",{style:{padding:"12px 16px",borderRadius:"10px",backgroundColor:"#F9FAFB",border:"1px solid #E5E7EB",fontSize:"11px",color:"#9CA3AF"}},
+                    "Source: NatureScot GeoJSON downloads · Processed "+(data.last_processed?new Date(data.last_processed).toLocaleDateString():"recently")+(data.data_sources&&data.data_sources.protected_sites?" · "+data.data_sources.protected_sites.attribution:"")
+                )
+            );
+        }
+
+        // ── Regional page ─────────────────────────────────────────────────────
+
+        function RegionalPage(p){
+            var data=p.data;
+            var _s=useState("alpha"), sortBy=_s[0], setSortBy=_s[1];
+            var _sel=useState(null), selected=_sel[0], setSelected=_sel[1];
+            if(!data) return e("div",{style:{padding:"48px",textAlign:"center",color:"#6B7280"}},"Loading regional data…");
+            var regions=[].concat(data.regions).sort(function(a,b){
+                if(sortBy==="alpha")return a.local_authority.localeCompare(b.local_authority);
+                if(sortBy==="area")return b.total_area_ha-a.total_area_ha;
+                return b.total_sites-a.total_sites;
+            });
+            var maxVal=sortBy==="area"
+                ?Math.max.apply(null,regions.map(function(r){return r.total_area_ha;}))
+                :Math.max.apply(null,regions.map(function(r){return r.total_sites;}));
+            var selectedRegion=selected?data.regions.find(function(r){return r.local_authority===selected;}):null;
+            return e("div",{style:{display:"flex",flexDirection:"column",gap:"20px"}},
+                e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"12px",flexWrap:"wrap"}},
+                    e("div",{style:{fontSize:"13px",color:"#6B7280"}},
+                        data.total_regions+" Scottish council areas · "+data.regions.reduce(function(s,r){return s+r.total_sites;},0).toLocaleString()+" designated sites"
+                    ),
+                    e("div",{style:{display:"flex",gap:"6px"}},
+                        [["alpha","A–Z"],["sites","By site count"],["area","By area (ha)"]].map(function(v){
+                            return e("button",{key:v[0],onClick:function(){setSortBy(v[0]);},style:{
+                                padding:"5px 12px",borderRadius:"6px",border:"1px solid",
+                                borderColor:sortBy===v[0]?"#40916C":"#D1D5DB",
+                                backgroundColor:sortBy===v[0]?"#F0FFF4":"#fff",
+                                color:sortBy===v[0]?"#1B4332":"#6B7280",
+                                fontWeight:sortBy===v[0]?700:400,
+                                fontSize:"12px",cursor:"pointer"
+                            }},v[1]);
+                        })
+                    )
+                ),
+                e("div",{style:{display:"grid",gridTemplateColumns:selected?"1fr 340px":"1fr",gap:"16px",alignItems:"start"}},
+                    e("div",{style:{backgroundColor:"#fff",borderRadius:"16px",border:"1px solid #E5E7EB",overflow:"hidden"}},
+                        regions.map(function(r,i){
+                            var val=sortBy==="area"?r.total_area_ha:r.total_sites;
+                            var pct=maxVal>0?(val/maxVal)*100:0;
+                            var isSel=r.local_authority===selected;
+                            return e("div",{key:r.local_authority,
+                                onClick:function(){setSelected(isSel?null:r.local_authority);},
+                                style:{display:"flex",alignItems:"center",gap:"12px",padding:"10px 16px",
+                                    borderBottom:i<regions.length-1?"1px solid #F3F4F6":"none",
+                                    backgroundColor:isSel?"#F0FFF4":i%2===0?"#FAFDF7":"#fff",cursor:"pointer"}},
+                                sortBy!=="alpha"&&e("div",{style:{width:24,fontSize:"11px",color:"#9CA3AF",textAlign:"right",fontFamily:"'JetBrains Mono',monospace",flexShrink:0}},i+1),
+                                e("div",{style:{flex:1,minWidth:0}},
+                                    e("div",{style:{fontWeight:600,fontSize:"13px",color:isSel?"#1B4332":"#374151",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}},r.local_authority),
+                                    e("div",{style:{display:"flex",gap:"4px",marginTop:"3px",flexWrap:"wrap"}},
+                                        Object.entries(r.by_type).sort(function(a,b){return b[1]-a[1];}).map(function(t){
+                                            return e("span",{key:t[0],style:{fontSize:"10px",color:"#6B7280"}},
+                                                e("span",{style:{display:"inline-block",width:7,height:7,borderRadius:"50%",backgroundColor:DESIG_COL[t[0]]||"#6B7280",marginRight:2,verticalAlign:"middle"}}),
+                                                t[0]+" "+t[1]);
+                                        })
+                                    )
+                                ),
+                                e("div",{style:{width:120,flexShrink:0}},
+                                    e("div",{style:{height:6,borderRadius:3,backgroundColor:"#F3F4F6",overflow:"hidden"}},
+                                        e("div",{style:{height:"100%",width:pct+"%",borderRadius:3,backgroundColor:isSel?"#1B4332":"#52B788"}})
+                                    )
+                                ),
+                                e("div",{style:{width:72,textAlign:"right",fontSize:"13px",fontWeight:700,color:isSel?"#1B4332":"#40916C",fontFamily:"'JetBrains Mono',monospace",flexShrink:0}},
+                                    sortBy==="area"
+                                        ?(r.total_area_ha>=1000?(r.total_area_ha/1000).toFixed(0)+"k":r.total_area_ha.toLocaleString())+" ha"
+                                        :r.total_sites.toLocaleString()
+                                )
+                            );
+                        })
+                    ),
+                    selectedRegion&&e("div",{className:"fade-in",style:{backgroundColor:"#fff",borderRadius:"16px",border:"1px solid #D1FAE5",overflow:"hidden",position:"sticky",top:16}},
+                        e("div",{style:{padding:"14px 16px",backgroundColor:"#1B4332",display:"flex",alignItems:"center",justifyContent:"space-between"}},
+                            e("div",{style:{fontWeight:700,color:"#fff",fontSize:"14px"}},selectedRegion.local_authority),
+                            e("button",{onClick:function(){setSelected(null);},style:{background:"none",border:"none",cursor:"pointer",fontSize:"16px",color:"rgba(255,255,255,0.7)"}},"✕")
+                        ),
+                        e("div",{style:{padding:"16px"}},
+                            e("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px",marginBottom:"14px"}},
+                                e("div",{style:{padding:"10px 12px",borderRadius:"10px",backgroundColor:"#F0FFF4",border:"1px solid #D1FAE5",textAlign:"center"}},
+                                    e("div",{style:{fontSize:"22px",fontWeight:700,color:"#1B4332",fontFamily:"'JetBrains Mono',monospace"}},selectedRegion.total_sites),
+                                    e("div",{style:{fontSize:"11px",color:"#6B7280"}},"designated sites")
+                                ),
+                                e("div",{style:{padding:"10px 12px",borderRadius:"10px",backgroundColor:"#F0FFF4",border:"1px solid #D1FAE5",textAlign:"center"}},
+                                    e("div",{style:{fontSize:"22px",fontWeight:700,color:"#1B4332",fontFamily:"'JetBrains Mono',monospace"}},
+                                        selectedRegion.total_area_ha>=1000000
+                                            ?(selectedRegion.total_area_ha/1000000).toFixed(2)+"M"
+                                            :selectedRegion.total_area_ha>=1000
+                                                ?(selectedRegion.total_area_ha/1000).toFixed(0)+"k"
+                                                :selectedRegion.total_area_ha.toLocaleString()
+                                    ),
+                                    e("div",{style:{fontSize:"11px",color:"#6B7280"}},"hectares protected")
+                                )
+                            ),
+                            e("div",{style:{marginBottom:"14px"}},
+                                e("div",{style:{fontSize:"11px",fontWeight:700,color:"#6B7280",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"6px"}},"By designation"),
+                                e("div",{style:{display:"flex",flexWrap:"wrap",gap:"6px"}},
+                                    Object.entries(selectedRegion.by_type).sort(function(a,b){return b[1]-a[1];}).map(function(t){
+                                        return e("div",{key:t[0],style:{display:"flex",alignItems:"center",gap:"5px",padding:"3px 8px",borderRadius:"16px",backgroundColor:"#F9FAFB",border:"1px solid #E5E7EB"}},
+                                            e(Badge,{type:t[0]}),
+                                            e("span",{style:{fontSize:"12px",fontWeight:600,color:"#374151"}},t[1]));
+                                    })
+                                )
+                            ),
+                            e("div",null,
+                                e("div",{style:{fontSize:"11px",fontWeight:700,color:"#6B7280",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"6px"}},"Largest sites"),
+                                e("div",{style:{display:"flex",flexDirection:"column",gap:"4px"}},
+                                    selectedRegion.largest_sites.map(function(s,i){
+                                        return e("div",{key:i,style:{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"7px 10px",borderRadius:"7px",backgroundColor:i%2===0?"#FAFDF7":"#fff",border:"1px solid #F3F4F6"}},
+                                            e("div",{style:{display:"flex",alignItems:"center",gap:"7px",minWidth:0}},
+                                                e(Badge,{type:s.type}),
+                                                e("span",{style:{fontSize:"12px",color:"#1B4332",fontWeight:500,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}},s.name)
+                                            ),
+                                            s.area_ha&&e("span",{style:{fontSize:"11px",color:"#9CA3AF",fontFamily:"'JetBrains Mono',monospace",whiteSpace:"nowrap",marginLeft:"6px"}},
+                                                (s.area_ha>=1000?(s.area_ha/1000).toFixed(0)+"k":s.area_ha.toLocaleString())+" ha"
+                                            )
+                                        );
+                                    })
+                                )
+                            )
+                        )
+                    )
+                ),
+                e("div",{style:{fontSize:"11px",color:"#9CA3AF",lineHeight:1.5}},"Council area boundaries approximated via nearest-centroid assignment. Source: NatureScot open data (OGL v3.0).")
+            );
+        }
+
+        // ── Postcode page ─────────────────────────────────────────────────────
+
+        function SpeciesPanel(p){
+            var groups=p.groups,onSelectGroup=p.onSelectGroup,selectedGroup=p.selectedGroup,speciesList=p.speciesList,loadingSpecies=p.loadingSpecies,radius=p.radius;
+            var chartData=groups.slice(0,12).map(function(g){return{name:g.name.length>14?g.name.slice(0,13)+"…":g.name,fullName:g.name,species:g.speciesCount||g.count,records:g.count};});
+            var totalSpecies=groups.reduce(function(s,g){return s+(g.speciesCount||0);},0);
+            var totalRecords=groups.reduce(function(s,g){return s+g.count;},0);
+            return e("div",null,
+                e("div",{style:{display:"flex",gap:"16px",marginBottom:"20px",flexWrap:"wrap"}},
+                    [{l:"Species recorded",v:totalSpecies.toLocaleString(),bg:"linear-gradient(135deg,#1B4332,#2D6A4F)",c:"#fff"},
+                     {l:"Total records",v:totalRecords.toLocaleString(),bg:"linear-gradient(135deg,#40916C,#52B788)",c:"#fff"},
+                     {l:"Taxonomic groups",v:groups.length,bg:"linear-gradient(135deg,#74C69D,#95D5B2)",c:"#1B4332"}
+                    ].map(function(s,i){
+                        return e("div",{key:i,style:{padding:"12px 20px",borderRadius:"12px",background:s.bg,color:s.c,flex:1,minWidth:140}},
+                            e("div",{style:{fontSize:"28px",fontWeight:700,fontFamily:"'JetBrains Mono',monospace"}},s.v),
+                            e("div",{style:{fontSize:"12px",opacity:0.8,marginTop:2}},s.l));
+                    })
+                ),
+                e("div",{style:{width:"100%",height:Math.max(280,chartData.length*32)}},
+                    e(ResponsiveContainer,{width:"100%",height:"100%"},
+                        e(BarChart,{data:chartData,layout:"vertical",margin:{left:10,right:30,top:5,bottom:5}},
+                            e(XAxis,{type:"number",tick:{fontSize:12,fill:"#6B7280"},axisLine:false,tickLine:false}),
+                            e(YAxis,{type:"category",dataKey:"name",width:120,tick:{fontSize:12,fill:"#374151"},axisLine:false,tickLine:false}),
+                            e(Tooltip,{content:function(tp){
+                                if(!tp.active||!tp.payload||!tp.payload[0])return null;
+                                var d=tp.payload[0].payload;
+                                return e("div",{style:{background:"#fff",border:"1px solid #E5E7EB",borderRadius:"8px",padding:"10px 14px",boxShadow:"0 4px 12px rgba(0,0,0,0.1)",fontSize:"13px"}},
+                                    e("div",{style:{fontWeight:700,color:"#1B4332"}},(ICONS[d.fullName]||"📋")+" "+d.fullName),
+                                    e("div",{style:{color:"#6B7280",marginTop:4}},d.species+" species · "+d.records.toLocaleString()+" records"));
+                            }}),
+                            e(Bar,{dataKey:"species",radius:[0,6,6,0],cursor:"pointer",onClick:function(d){onSelectGroup(d.fullName);}},
+                                chartData.map(function(d,i){return e(Cell,{key:i,fill:d.fullName===selectedGroup?"#1B4332":"#52B788"});})
+                            )
+                        )
+                    )
+                ),
+                e("div",{style:{fontSize:"12px",color:"#9CA3AF",textAlign:"center",marginTop:4}},"Click a bar to view species list"),
+                selectedGroup&&e("div",{style:{marginTop:"20px",border:"1px solid #D1FAE5",borderRadius:"12px",overflow:"hidden",backgroundColor:"#FAFDF7"}},
+                    e("div",{style:{padding:"12px 16px",backgroundColor:"#D8F3DC",display:"flex",alignItems:"center",justifyContent:"space-between"}},
+                        e("span",{style:{fontWeight:700,color:"#1B4332",fontSize:"14px"}},(ICONS[selectedGroup]||"📋")+" "+selectedGroup),
+                        e("button",{onClick:function(){onSelectGroup(null);},style:{background:"none",border:"none",cursor:"pointer",fontSize:"18px",color:"#6B7280"}},"✕")
+                    ),
+                    loadingSpecies
+                        ?e("div",{style:{padding:"24px",textAlign:"center",color:"#6B7280"}},"Loading species…")
+                        :speciesList&&speciesList.length>0
+                            ?e("div",{style:{maxHeight:320,overflowY:"auto"}},
+                                speciesList.map(function(sp,i){
+                                    return e("div",{key:i,style:{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 16px",borderBottom:i<speciesList.length-1?"1px solid #E5E7EB":"none",backgroundColor:i%2===0?"#fff":"#FAFDF7"}},
+                                        e("div",null,
+                                            e("div",{style:{fontWeight:600,color:"#1B4332",fontSize:"13px"}},sp.name),
+                                            e("div",{style:{fontSize:"11px",color:"#9CA3AF",fontStyle:"italic"}},sp.scientificName)
+                                        ),
+                                        e("div",{style:{fontFamily:"'JetBrains Mono',monospace",fontSize:"13px",fontWeight:600,color:"#40916C"}},sp.count));
+                                })
+                            )
+                            :e("div",{style:{padding:"24px",textAlign:"center",color:"#6B7280"}},"No species data available.")
+                )
+            );
+        }
+
+        function NearbySitesPanel(p){
+            var sites=p.sites,lat=p.lat,lon=p.lon,radius=p.radius,onRadiusChange=p.onRadiusChange;
+            var nearby=sites
+                .filter(function(s){return s.centroid_lat&&s.centroid_lon;})
+                .map(function(s){
+                    var cd=haversine(lat,lon,s.centroid_lat,s.centroid_lon);
+                    var bd=Math.max(0,cd-siteApproxRadiusKm(s.area_ha));
+                    return Object.assign({},s,{distance:bd});
+                })
+                .filter(function(s){return s.distance<=radius;})
+                .sort(function(a,b){return a.distance-b.distance;});
+            var byType={};
+            nearby.forEach(function(s){byType[s.type]=(byType[s.type]||0)+1;});
+            return e("div",{style:{backgroundColor:"#fff",borderRadius:"16px",border:"1px solid #E5E7EB",overflow:"hidden"}},
+                e("div",{style:{padding:"16px 20px 12px",borderBottom:"1px solid #F3F4F6",display:"flex",alignItems:"center",justifyContent:"space-between"}},
+                    e("div",null,
+                        e("h2",{style:{margin:0,fontSize:"16px",fontWeight:700,color:"#1B4332"}},"📍 Protected Sites Nearby"),
+                        e("p",{style:{margin:"2px 0 0",fontSize:"12px",color:"#9CA3AF"}},
+                            nearby.length+" site"+(nearby.length!==1?"s":"")+" within "+radius+"km · distances to nearest boundary · Source: NatureScot open data")
+                    ),
+                    e("select",{value:radius,onChange:function(ev){onRadiusChange(Number(ev.target.value));},style:{padding:"4px 8px",borderRadius:"6px",border:"1px solid #D1D5DB",fontSize:"12px",color:"#374151",cursor:"pointer"}},
+                        [2,5,10,20].map(function(v){return e("option",{key:v,value:v},v+" km");}))
+                ),
+                e("div",{style:{padding:"16px 20px"}},
+                    nearby.length===0
+                        ?e("div",{style:{padding:"20px",textAlign:"center",color:"#6B7280",fontStyle:"italic"}},"No designated sites found within "+radius+"km. Try expanding the search radius.")
+                        :e(React.Fragment,null,
+                            e("div",{style:{display:"flex",gap:"8px",flexWrap:"wrap",marginBottom:"12px"}},
+                                Object.keys(byType).map(function(t){
+                                    return e("div",{key:t,style:{display:"flex",alignItems:"center",gap:"5px",padding:"3px 8px",borderRadius:"16px",backgroundColor:"#F0FFF4",border:"1px solid #D1FAE5",fontSize:"12px"}},
+                                        e(Badge,{type:t}),
+                                        e("span",{style:{fontWeight:600,color:"#1B4332"}},byType[t]));
+                                })
+                            ),
+                            e("div",{style:{display:"flex",flexDirection:"column",gap:"6px"}},
+                                nearby.slice(0,20).map(function(s,i){
+                                    return e("div",{key:s.name+"-"+s.type+"-"+i,style:{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",borderRadius:"8px",backgroundColor:i%2===0?"#FAFDF7":"#fff",border:"1px solid #E5E7EB"}},
+                                        e("div",{style:{display:"flex",alignItems:"center",gap:"10px",flex:1,minWidth:0}},
+                                            e(Badge,{type:s.type}),
+                                            e("div",{style:{minWidth:0}},
+                                                e("div",{style:{fontWeight:600,color:"#1B4332",fontSize:"13px",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}},s.name),
+                                                s.area_ha&&e("div",{style:{fontSize:"11px",color:"#9CA3AF"}},s.area_ha.toLocaleString()+" ha")
+                                            )
+                                        ),
+                                        e("div",{style:{fontSize:"13px",fontWeight:600,color:"#40916C",whiteSpace:"nowrap",fontFamily:"'JetBrains Mono',monospace"}},
+                                            s.distance===0?"within site":s.distance.toFixed(1)+" km")
+                                    );
+                                })
+                            ),
+                            nearby.length>20&&e("div",{style:{textAlign:"center",fontSize:"12px",color:"#9CA3AF",padding:"8px"}},"…and "+(nearby.length-20)+" more within "+radius+"km")
+                        )
+                )
+            );
+        }
+
+        function PostcodePage(p){
+            var allSites=p.allSites,apiStatus=p.apiStatus;
             var _pc=useState(""), postcode=_pc[0], setPostcode=_pc[1];
             var _loc=useState(null), location=_loc[0], setLocation=_loc[1];
             var _ld=useState(false), loading=_ld[0], setLoading=_ld[1];
@@ -68,232 +397,133 @@
             var _sld=useState(false), speciesLoading=_sld[0], setSpeciesLoading=_sld[1];
             var _se=useState(null), speciesError=_se[0], setSpeciesError=_se[1];
             var _rad=useState(5), radius=_rad[0], setRadius=_rad[1];
-
-            useEffect(function(){
-                var s={github:false,postcodes:false,nbn:false};
-                Promise.all([
-                    fetch(GITHUB_DATA+"/national.json").then(function(r){if(r.ok)return r.json();throw 0;}).then(function(d){setNatData(d);s.github=true;}).catch(function(){}),
-                    fetch(GITHUB_DATA+"/sites.json").then(function(r){if(r.ok)return r.json();throw 0;}).then(function(d){setAllSites(d);s.github=true;}).catch(function(){}),
-                    fetch("https://api.postcodes.io/postcodes/EH11RE").then(function(r){s.postcodes=r.ok;}).catch(function(){}),
-                    fetch("https://records-ws.nbnatlas.org/explore/groups?lat=55.95&lon=-3.19&radius=1").then(function(r){s.nbn=r.ok;}).catch(function(){})
-                ]).then(function(){setApiStatus(s);});
-            },[]);
+            var canSearch=apiStatus&&apiStatus.postcodes;
 
             function handleSearch(){
                 var clean=postcode.replace(/\s/g,"").toUpperCase();
                 if(clean.length<5){setError("Please enter a full Scottish postcode (e.g. EH1 1RE)");return;}
-                if(SCOT_PREFIX.indexOf(clean.slice(0,2))<0 && !/^G\d/.test(clean)){setError("This doesn't look like a Scottish postcode.");return;}
+                if(SCOT_PREFIX.indexOf(clean.slice(0,2))<0&&!/^G\d/.test(clean)){setError("This doesn't look like a Scottish postcode.");return;}
                 setError(null);setLoading(true);setSpeciesGroups(null);setSelectedGroup(null);setSpeciesList(null);setSpeciesError(null);
-                fetch("https://api.postcodes.io/postcodes/"+clean).then(function(r){if(!r.ok)throw new Error("Invalid");return r.json();}).then(function(data){
-                    if(data.result.country!=="Scotland")throw new Error("Not Scotland");
-                    var loc={lat:data.result.latitude,lon:data.result.longitude,admin:data.result.admin_district,constituency:data.result.parliamentary_constituency,postcode:data.result.postcode};
-                    setLocation(loc);setLoading(false);setSpeciesLoading(true);
-                    return fetch("https://records-ws.nbnatlas.org/explore/groups?lat="+loc.lat+"&lon="+loc.lon+"&radius="+radius+"&fq=country:Scotland").then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(d){
-                        setSpeciesGroups(d.filter(function(g){return g.count>0;}).map(function(g){return{name:g.name,count:g.count,speciesCount:g.speciesCount};}).sort(function(a,b){return b.count-a.count;}));
-                    }).catch(function(){setSpeciesError("Could not load species data from the NBN Atlas.");}).then(function(){setSpeciesLoading(false);});
-                }).catch(function(err){
-                    setLoading(false);
-                    setError(err.message==="Not Scotland"?"This postcode isn't in Scotland.":err.message==="Invalid"?"Postcode not recognised.":"Could not look up postcode. Check your internet connection.");
-                });
+                fetch("https://api.postcodes.io/postcodes/"+clean)
+                    .then(function(r){if(!r.ok)throw new Error("Invalid");return r.json();})
+                    .then(function(data){
+                        if(data.result.country!=="Scotland")throw new Error("Not Scotland");
+                        var loc={lat:data.result.latitude,lon:data.result.longitude,admin:data.result.admin_district,constituency:data.result.parliamentary_constituency,postcode:data.result.postcode};
+                        setLocation(loc);setLoading(false);setSpeciesLoading(true);
+                        return fetch("https://records-ws.nbnatlas.org/explore/groups?lat="+loc.lat+"&lon="+loc.lon+"&radius="+radius+"&fq=country:Scotland")
+                            .then(function(r){if(!r.ok)throw 0;return r.json();})
+                            .then(function(d){
+                                setSpeciesGroups(d.filter(function(g){return g.count>0;}).map(function(g){return{name:g.name,count:g.count,speciesCount:g.speciesCount};}).sort(function(a,b){return b.count-a.count;}));
+                            })
+                            .catch(function(){setSpeciesError("Could not load species data from the NBN Atlas.");})
+                            .then(function(){setSpeciesLoading(false);});
+                    })
+                    .catch(function(err){
+                        setLoading(false);
+                        setError(err.message==="Not Scotland"?"This postcode isn't in Scotland.":err.message==="Invalid"?"Postcode not recognised.":"Could not look up postcode. Check your internet connection.");
+                    });
             }
 
             function handleGroupSelect(groupName){
                 if(groupName===selectedGroup){setSelectedGroup(null);setSpeciesList(null);return;}
                 setSelectedGroup(groupName);setLoadingSpecies(true);
                 fetch("https://records-ws.nbnatlas.org/explore/group/"+encodeURIComponent(groupName)+"?lat="+location.lat+"&lon="+location.lon+"&radius="+radius+"&pageSize=20&fq=country:Scotland")
-                .then(function(r){if(!r.ok)throw 0;return r.json();}).then(function(d){setSpeciesList(d.map(function(s){return{name:s.commonName||s.name,scientificName:s.name,count:s.count};}));})
-                .catch(function(){setSpeciesList([]);}).then(function(){setLoadingSpecies(false);});
+                    .then(function(r){if(!r.ok)throw 0;return r.json();})
+                    .then(function(d){setSpeciesList(d.map(function(s){return{name:s.commonName||s.name,scientificName:s.name,count:s.count};}));})
+                    .catch(function(){setSpeciesList([]);})
+                    .then(function(){setLoadingSpecies(false);});
             }
 
-            var canSearch=apiStatus&&apiStatus.postcodes;
-
-            // Status banner
-            function renderStatus(){
-                if(!apiStatus) return e("div",{style:{padding:"12px 16px",borderRadius:"10px",backgroundColor:"#F9FAFB",border:"1px solid #E5E7EB",fontSize:"13px",color:"#6B7280",textAlign:"center"}},"Checking data sources…");
-                var probs=[];
-                if(!apiStatus.github)probs.push("GitHub Pages data");
-                if(!apiStatus.postcodes)probs.push("Postcodes.io");
-                if(!apiStatus.nbn)probs.push("NBN Atlas");
-                if(probs.length===0)return null;
-                return e("div",{style:{padding:"16px 20px",borderRadius:"12px",backgroundColor:probs.length===3?"#FEF2F2":"#FFFBEB",border:"1px solid "+(probs.length===3?"#FECACA":"#FDE68A"),fontSize:"13px",lineHeight:1.6}},
-                    e("div",{style:{fontWeight:700,color:probs.length===3?"#991B1B":"#92400E",marginBottom:"6px"}},probs.length===3?"Data sources unreachable":"Some data sources unreachable"),
-                    e("div",{style:{color:probs.length===3?"#B91C1C":"#A16207"}},probs.length===3?"This dashboard requires internet access.":"Unreachable: "+probs.join(", ")),
-                    e("div",{style:{display:"flex",gap:"16px",marginTop:"10px"}},
-                        [["GitHub data",apiStatus.github],["Postcodes.io",apiStatus.postcodes],["NBN Atlas",apiStatus.nbn]].map(function(x){
-                            return e("div",{key:x[0],style:{display:"flex",alignItems:"center",gap:"5px",fontSize:"12px"}},
-                                e("span",{style:{width:8,height:8,borderRadius:"50%",backgroundColor:x[1]?"#22C55E":"#EF4444",display:"inline-block"}}),
-                                e("span",{style:{color:"#374151"}},x[0]));
-                        })
-                    )
-                );
-            }
-
-            // National panel
-            function renderNational(){
-                if(!natData||location)return null;
-                var counts=natData.designation_counts||{};
-                var types=Object.keys(counts).sort(function(a,b){return counts[b]-counts[a];});
-                return e("div",{style:{backgroundColor:"#fff",borderRadius:"16px",border:"1px solid #E5E7EB",boxShadow:"0 1px 3px rgba(0,0,0,0.04)",overflow:"hidden"}},
-                    e("div",{style:{padding:"16px 20px 12px",borderBottom:"1px solid #F3F4F6"}},
-                        e("h2",{style:{margin:0,fontSize:"16px",fontWeight:700,color:"#1B4332"}},"🏴󠁧󠁢󠁳󠁣󠁴󠁿 Protected Sites Across Scotland"),
-                        e("p",{style:{margin:"2px 0 0",fontSize:"12px",color:"#9CA3AF"}},"Source: NatureScot GeoJSON downloads · Processed "+(natData.last_processed?new Date(natData.last_processed).toLocaleDateString():"recently"))
-                    ),
-                    e("div",{style:{padding:"20px"}},
-                        e("div",{style:{display:"flex",gap:"12px",flexWrap:"wrap",marginBottom:"16px"}},
-                            types.map(function(t){return e("div",{key:t,style:{display:"flex",alignItems:"center",gap:"8px",padding:"10px 16px",borderRadius:"10px",backgroundColor:"#F0FFF4",border:"1px solid #D1FAE5"}},
-                                e(Badge,{type:t}),e("span",{style:{fontSize:"22px",fontWeight:700,color:"#1B4332",fontFamily:"'JetBrains Mono',monospace"}},counts[t].toLocaleString()));})
+            return e("div",{style:{display:"flex",flexDirection:"column",gap:"20px"}},
+                canSearch
+                    ?e("div",{style:{backgroundColor:"#fff",borderRadius:"16px",border:"1px solid #E5E7EB",padding:"20px"}},
+                        e("div",{style:{fontSize:"13px",fontWeight:600,color:"#374151",marginBottom:"10px"}},"Enter a Scottish postcode"),
+                        e("div",{style:{display:"flex",gap:"10px",maxWidth:440}},
+                            e("input",{type:"text",value:postcode,onChange:function(ev){setPostcode(ev.target.value.toUpperCase());},onKeyDown:function(ev){if(ev.key==="Enter")handleSearch();},placeholder:"e.g. EH1 1RE",
+                                style:{flex:1,padding:"10px 14px",borderRadius:"8px",border:"1px solid #D1D5DB",fontSize:"15px",fontWeight:600,letterSpacing:"1px",fontFamily:"'JetBrains Mono',monospace"}}),
+                            e("button",{onClick:handleSearch,disabled:loading,style:{padding:"10px 20px",borderRadius:"8px",border:"none",backgroundColor:"#1B4332",color:"#fff",fontWeight:700,fontSize:"14px",cursor:loading?"wait":"pointer"}},loading?"Searching…":"Explore")
                         ),
-                        e("div",{style:{fontSize:"14px",fontWeight:600,color:"#1B4332"}},(natData.total_sites||0).toLocaleString()+" total designated sites"),
-                        natData.data_sources&&natData.data_sources.protected_sites&&e("div",{style:{marginTop:"8px",fontSize:"11px",color:"#9CA3AF"}},natData.data_sources.protected_sites.attribution)
-                    )
-                );
-            }
-
-            // Nearby sites
-            function siteApproxRadiusKm(area_ha){
-                if(!area_ha||area_ha<=0)return 0;
-                return Math.sqrt((area_ha*10000)/Math.PI)/1000;
-            }
-            function renderNearbySites(){
-                if(!allSites||!location)return null;
-                var nearby=allSites.filter(function(s){return s.centroid_lat&&s.centroid_lon;}).map(function(s){
-                    var centroidDist=haversine(location.lat,location.lon,s.centroid_lat,s.centroid_lon);
-                    var boundaryDist=Math.max(0,centroidDist-siteApproxRadiusKm(s.area_ha));
-                    return Object.assign({},s,{distance:boundaryDist});
-                }).filter(function(s){return s.distance<=radius;}).sort(function(a,b){return a.distance-b.distance;});
-                var byType={};nearby.forEach(function(s){byType[s.type]=(byType[s.type]||0)+1;});
-                return e("div",{style:{backgroundColor:"#fff",borderRadius:"16px",border:"1px solid #E5E7EB",boxShadow:"0 1px 3px rgba(0,0,0,0.04)",overflow:"hidden"}},
-                    e("div",{style:{padding:"16px 20px 12px",borderBottom:"1px solid #F3F4F6",display:"flex",alignItems:"center",justifyContent:"space-between"}},
-                        e("div",null,
-                            e("h2",{style:{margin:0,fontSize:"16px",fontWeight:700,color:"#1B4332"}},"📍 Protected Sites Nearby"),
-                            e("p",{style:{margin:"2px 0 0",fontSize:"12px",color:"#9CA3AF"}},nearby.length+" site"+(nearby.length!==1?"s":"")+" within "+radius+"km · Source: NatureScot open data")
+                        error&&e("div",{style:{marginTop:"10px",padding:"8px 12px",borderRadius:"6px",backgroundColor:"#FEF2F2",color:"#DC2626",fontSize:"13px"}},error),
+                        location&&e("div",{className:"fade-in",style:{marginTop:"10px",fontSize:"13px",color:"#374151",display:"flex",alignItems:"center",gap:"6px"}},
+                            "📍 ",e("span",{style:{fontWeight:600}},location.postcode)," · ",location.admin,
+                            location.constituency?" · "+location.constituency:""
                         ),
-                        e("select",{value:radius,onChange:function(ev){setRadius(Number(ev.target.value));},style:{padding:"4px 8px",borderRadius:"6px",border:"1px solid #D1D5DB",fontSize:"12px",color:"#374151",cursor:"pointer"}},
-                            [2,5,10,20].map(function(v){return e("option",{key:v,value:v},v+" km");}))
-                    ),
-                    e("div",{style:{padding:"16px 20px"}},
-                        nearby.length===0
-                        ? e("div",{style:{padding:"20px",textAlign:"center",color:"#6B7280",fontStyle:"italic"}},"No designated sites within "+radius+"km. Try expanding the radius.")
-                        : e(React.Fragment,null,
-                            e("div",{style:{display:"flex",gap:"8px",flexWrap:"wrap",marginBottom:"12px"}},
-                                Object.keys(byType).map(function(t){return e("div",{key:t,style:{display:"flex",alignItems:"center",gap:"5px",padding:"3px 8px",borderRadius:"16px",backgroundColor:"#F0FFF4",border:"1px solid #D1FAE5",fontSize:"12px"}},e(Badge,{type:t}),e("span",{style:{fontWeight:600,color:"#1B4332"}},byType[t]));})
-                            ),
-                            e("div",{style:{display:"flex",flexDirection:"column",gap:"6px"}},
-                                nearby.slice(0,25).map(function(s,i){return e("div",{key:s.name+"-"+s.type+"-"+i,style:{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",borderRadius:"8px",backgroundColor:i%2===0?"#FAFDF7":"#fff",border:"1px solid #E5E7EB"}},
-                                    e("div",{style:{display:"flex",alignItems:"center",gap:"10px",flex:1,minWidth:0}},
-                                        e(Badge,{type:s.type}),
-                                        e("div",{style:{minWidth:0}},
-                                            e("div",{style:{fontWeight:600,color:"#1B4332",fontSize:"13px",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}},s.name),
-                                            s.area_ha&&e("div",{style:{fontSize:"11px",color:"#9CA3AF"}},s.area_ha.toLocaleString()+" ha")
-                                        )
-                                    ),
-                                    e("div",{style:{fontSize:"13px",fontWeight:600,color:"#40916C",whiteSpace:"nowrap",fontFamily:"'JetBrains Mono',monospace"}},s.distance===0?"within site":s.distance.toFixed(1)+" km")
-                                );})
-                            ),
-                            nearby.length>25&&e("div",{style:{textAlign:"center",fontSize:"12px",color:"#9CA3AF",padding:"8px"}},"…and "+(nearby.length-25)+" more")
+                        !location&&e("div",{style:{marginTop:"12px",display:"flex",gap:"8px",flexWrap:"wrap"}},
+                            ["EH1 1RE","G1 1XQ","AB10 1AF","IV2 3BL","DD1 4HN"].map(function(pc){
+                                return e("button",{key:pc,onClick:function(){setPostcode(pc);},style:{padding:"5px 12px",borderRadius:"6px",border:"1px solid #D1FAE5",backgroundColor:"#F0FFF4",color:"#2D6A4F",fontWeight:600,fontSize:"12px",cursor:"pointer",fontFamily:"'JetBrains Mono',monospace"}},pc);
+                            })
                         )
                     )
-                );
-            }
-
-            // Species panel
-            function renderSpecies(){
-                if(!location)return null;
-                var chartData=(speciesGroups||[]).slice(0,12).map(function(g){return{name:g.name.length>14?g.name.slice(0,13)+"…":g.name,fullName:g.name,species:g.speciesCount||g.count,records:g.count};});
-                var totalSp=(speciesGroups||[]).reduce(function(s,g){return s+(g.speciesCount||0);},0);
-                var totalRec=(speciesGroups||[]).reduce(function(s,g){return s+g.count;},0);
-
-                return e("div",{className:"fade-in",style:{backgroundColor:"#fff",borderRadius:"16px",border:"1px solid #E5E7EB",boxShadow:"0 1px 3px rgba(0,0,0,0.04)",overflow:"hidden"}},
+                    :e("div",{style:{padding:"16px 20px",borderRadius:"12px",backgroundColor:"#FFFBEB",border:"1px solid #FDE68A",fontSize:"13px",color:"#92400E"}},"Postcodes.io is unreachable. Postcode search requires an internet connection."),
+                location&&allSites&&e(NearbySitesPanel,{sites:allSites,lat:location.lat,lon:location.lon,radius:radius,onRadiusChange:setRadius}),
+                location&&e("div",{className:"fade-in",style:{backgroundColor:"#fff",borderRadius:"16px",border:"1px solid #E5E7EB",overflow:"hidden"}},
                     e("div",{style:{padding:"16px 20px 12px",borderBottom:"1px solid #F3F4F6"}},
                         e("h2",{style:{margin:0,fontSize:"16px",fontWeight:700,color:"#1B4332"}},"🦅 Species Recorded Nearby"),
                         e("p",{style:{margin:"2px 0 0",fontSize:"12px",color:"#9CA3AF"}},"Live data from the NBN Atlas within "+radius+"km")
                     ),
                     e("div",{style:{padding:"20px"}},
-                        speciesLoading?e("div",{style:{padding:"40px",textAlign:"center",color:"#6B7280"}},"Loading species records from NBN Atlas…")
-                        :speciesError?e("div",{style:{padding:"24px",textAlign:"center",color:"#DC2626",fontSize:"13px"}},speciesError)
-                        :speciesGroups&&speciesGroups.length>0?e(React.Fragment,null,
-                            // Stats cards
-                            e("div",{style:{display:"flex",gap:"16px",marginBottom:"20px",flexWrap:"wrap"}},
-                                [{l:"Species recorded",v:totalSp.toLocaleString(),bg:"linear-gradient(135deg,#1B4332,#2D6A4F)",c:"#fff"},
-                                 {l:"Total records",v:totalRec.toLocaleString(),bg:"linear-gradient(135deg,#40916C,#52B788)",c:"#fff"},
-                                 {l:"Taxonomic groups",v:speciesGroups.length,bg:"linear-gradient(135deg,#74C69D,#95D5B2)",c:"#1B4332"}
-                                ].map(function(s,i){return e("div",{key:i,style:{padding:"12px 20px",borderRadius:"12px",background:s.bg,color:s.c,flex:1,minWidth:140}},
-                                    e("div",{style:{fontSize:"28px",fontWeight:700,fontFamily:"'JetBrains Mono',monospace"}},s.v),
-                                    e("div",{style:{fontSize:"12px",opacity:0.8,marginTop:2}},s.l));})
-                            ),
-                            // Bar chart
-                            e("div",{style:{width:"100%",height:Math.max(280,chartData.length*32)}},
-                                e(ResponsiveContainer,{width:"100%",height:"100%"},
-                                    e(BarChart,{data:chartData,layout:"vertical",margin:{left:10,right:30,top:5,bottom:5}},
-                                        e(XAxis,{type:"number",tick:{fontSize:12,fill:"#6B7280"},axisLine:false,tickLine:false}),
-                                        e(YAxis,{type:"category",dataKey:"name",width:120,tick:{fontSize:12,fill:"#374151"},axisLine:false,tickLine:false}),
-                                        e(Tooltip,{content:function(p){
-                                            if(!p.active||!p.payload||!p.payload[0])return null;
-                                            var d=p.payload[0].payload;
-                                            return e("div",{style:{background:"#fff",border:"1px solid #E5E7EB",borderRadius:"8px",padding:"10px 14px",boxShadow:"0 4px 12px rgba(0,0,0,0.1)",fontSize:"13px"}},
-                                                e("div",{style:{fontWeight:700,color:"#1B4332"}},(ICONS[d.fullName]||"📋")+" "+d.fullName),
-                                                e("div",{style:{color:"#6B7280",marginTop:4}},d.species+" species · "+d.records.toLocaleString()+" records"));
-                                        }}),
-                                        e(Bar,{dataKey:"species",radius:[0,6,6,0],cursor:"pointer",onClick:function(d){handleGroupSelect(d.fullName);}},
-                                            chartData.map(function(d,i){return e(Cell,{key:i,fill:d.fullName===selectedGroup?"#1B4332":"#52B788"});}))
-                                    )
-                                )
-                            ),
-                            e("div",{style:{fontSize:"12px",color:"#9CA3AF",textAlign:"center",marginTop:4}},"Click a bar to view species list"),
-                            // Species list
-                            selectedGroup&&e("div",{style:{marginTop:"20px",border:"1px solid #D1FAE5",borderRadius:"12px",overflow:"hidden",backgroundColor:"#FAFDF7"}},
-                                e("div",{style:{padding:"12px 16px",backgroundColor:"#D8F3DC",display:"flex",alignItems:"center",justifyContent:"space-between"}},
-                                    e("span",{style:{fontWeight:700,color:"#1B4332",fontSize:"14px"}},(ICONS[selectedGroup]||"📋")+" "+selectedGroup),
-                                    e("button",{onClick:function(){setSelectedGroup(null);setSpeciesList(null);},style:{background:"none",border:"none",cursor:"pointer",fontSize:"18px",color:"#6B7280"}},"✕")
-                                ),
-                                loadingSpecies?e("div",{style:{padding:"24px",textAlign:"center",color:"#6B7280"}},"Loading species…")
-                                :speciesList&&speciesList.length>0?e("div",{style:{maxHeight:320,overflowY:"auto"}},
-                                    speciesList.map(function(sp,i){return e("div",{key:i,style:{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 16px",borderBottom:i<speciesList.length-1?"1px solid #E5E7EB":"none",backgroundColor:i%2===0?"#fff":"#FAFDF7"}},
-                                        e("div",null,e("div",{style:{fontWeight:600,color:"#1B4332",fontSize:"13px"}},sp.name),e("div",{style:{fontSize:"11px",color:"#9CA3AF",fontStyle:"italic"}},sp.scientificName)),
-                                        e("div",{style:{fontFamily:"'JetBrains Mono',monospace",fontSize:"13px",fontWeight:600,color:"#40916C"}},sp.count));})
-                                ):e("div",{style:{padding:"24px",textAlign:"center",color:"#6B7280"}},"No species data available.")
-                            )
-                        )
-                        :speciesGroups&&speciesGroups.length===0?e("div",{style:{padding:"24px",textAlign:"center",color:"#6B7280"}},"No species records found nearby.")
-                        :null
+                        speciesLoading
+                            ?e("div",{style:{padding:"40px",textAlign:"center",color:"#6B7280"}},"Loading species records from NBN Atlas…")
+                            :speciesError
+                                ?e("div",{style:{padding:"24px",textAlign:"center",color:"#DC2626",fontSize:"13px"}},speciesError)
+                                :speciesGroups&&speciesGroups.length>0
+                                    ?e(SpeciesPanel,{groups:speciesGroups,onSelectGroup:handleGroupSelect,selectedGroup:selectedGroup,speciesList:speciesList,loadingSpecies:loadingSpecies,radius:radius})
+                                    :speciesGroups&&speciesGroups.length===0
+                                        ?e("div",{style:{padding:"24px",textAlign:"center",color:"#6B7280"}},"No species records found nearby.")
+                                        :null
                     )
-                );
-            }
+                )
+            );
+        }
 
-            // Main render
+        // ── Main app ──────────────────────────────────────────────────────────
+
+        function App(){
+            var _tab=useState("national"), activeTab=_tab[0], setActiveTab=_tab[1];
+            var _api=useState(null), apiStatus=_api[0], setApiStatus=_api[1];
+            var _nat=useState(null), natData=_nat[0], setNatData=_nat[1];
+            var _reg=useState(null), regData=_reg[0], setRegData=_reg[1];
+            var _sites=useState(null), allSites=_sites[0], setAllSites=_sites[1];
+
+            useEffect(function(){
+                var s={github:false,postcodes:false,nbn:false};
+                Promise.all([
+                    fetch(GITHUB_DATA+"/national.json").then(function(r){if(r.ok)return r.json();throw 0;}).then(function(d){setNatData(d);s.github=true;}).catch(function(){}),
+                    fetch(GITHUB_DATA+"/regional.json").then(function(r){if(r.ok)return r.json();throw 0;}).then(function(d){setRegData(d);s.github=true;}).catch(function(){}),
+                    fetch(GITHUB_DATA+"/sites.json").then(function(r){if(r.ok)return r.json();throw 0;}).then(function(d){setAllSites(d);s.github=true;}).catch(function(){}),
+                    fetch("https://api.postcodes.io/postcodes/EH11RE").then(function(r){s.postcodes=r.ok;}).catch(function(){}),
+                    fetch("https://records-ws.nbnatlas.org/explore/groups?lat=55.95&lon=-3.19&radius=1").then(function(r){s.nbn=r.ok;}).catch(function(){})
+                ]).then(function(){setApiStatus(s);});
+            },[]);
+
             return e("div",{style:{minHeight:"100vh",background:"linear-gradient(170deg,#F0FFF4 0%,#ECFDF5 30%,#F9FAFB 100%)"}},
-                // Header
-                e("div",{style:{background:"linear-gradient(135deg,#1B4332 0%,#2D6A4F 60%,#40916C 100%)",padding:"32px 24px 28px",color:"#fff"}},
-                    e("div",{style:{maxWidth:900,margin:"0 auto"}},
-                        e("h1",{style:{margin:"0 0 6px",fontSize:"26px",fontWeight:700,letterSpacing:"-0.5px"}},"Scotland Nature Dashboard"),
-                        e("p",{style:{margin:0,fontSize:"14px",opacity:0.8}},"Explore biodiversity and protected sites near any Scottish postcode"),
-                        canSearch&&e("div",{style:{display:"flex",gap:"10px",marginTop:"20px",maxWidth:480}},
-                            e("input",{type:"text",value:postcode,onChange:function(ev){setPostcode(ev.target.value.toUpperCase());},onKeyDown:function(ev){if(ev.key==="Enter")handleSearch();},placeholder:"e.g. EH1 1RE",
-                                style:{flex:1,padding:"12px 16px",borderRadius:"10px",border:"2px solid rgba(255,255,255,0.25)",backgroundColor:"rgba(255,255,255,0.12)",color:"#fff",fontSize:"16px",fontWeight:600,letterSpacing:"1px",fontFamily:"'JetBrains Mono',monospace"}}),
-                            e("button",{onClick:handleSearch,disabled:loading,style:{padding:"12px 24px",borderRadius:"10px",border:"none",backgroundColor:"#D8F3DC",color:"#1B4332",fontWeight:700,fontSize:"14px",cursor:loading?"wait":"pointer",whiteSpace:"nowrap"}},loading?"Searching…":"Explore")
-                        ),
-                        error&&e("div",{style:{marginTop:"12px",padding:"8px 14px",borderRadius:"8px",backgroundColor:"rgba(239,68,68,0.15)",color:"#FCA5A5",fontSize:"13px",maxWidth:480}},error),
-                        location&&e("div",{className:"fade-in",style:{marginTop:"12px",fontSize:"13px",opacity:0.85,display:"flex",alignItems:"center",gap:"6px"}},
-                            "📍 ",e("strong",null,location.postcode)," · ",location.admin,location.constituency?" · "+location.constituency:"")
+                e("div",{style:{background:"linear-gradient(135deg,#1B4332 0%,#2D6A4F 60%,#40916C 100%)",padding:"28px 24px 0",color:"#fff"}},
+                    e("div",{style:{maxWidth:960,margin:"0 auto"}},
+                        e("h1",{style:{margin:"0 0 4px",fontSize:"24px",fontWeight:700,letterSpacing:"-0.5px"}},"Scotland Nature Dashboard"),
+                        e("p",{style:{margin:"0 0 20px",fontSize:"13px",opacity:0.75}},"Protected sites & biodiversity data from NatureScot and the NBN Atlas"),
+                        e("div",{style:{display:"flex",gap:"4px"}},
+                            TABS.map(function(tab){
+                                return e("button",{key:tab.id,onClick:function(){setActiveTab(tab.id);},style:{
+                                    padding:"10px 20px",border:"none",cursor:"pointer",fontSize:"14px",fontWeight:600,
+                                    borderRadius:"10px 10px 0 0",
+                                    backgroundColor:activeTab===tab.id?"#fff":"rgba(255,255,255,0.12)",
+                                    color:activeTab===tab.id?"#1B4332":"rgba(255,255,255,0.85)"
+                                }},tab.icon+" "+tab.label);
+                            })
+                        )
                     )
                 ),
-                // Content
-                e("div",{style:{maxWidth:900,margin:"0 auto",padding:"24px",display:"flex",flexDirection:"column",gap:"20px"}},
-                    renderStatus(),
-                    renderNational(),
-                    renderNearbySites(),
-                    renderSpecies(),
-                    !location&&!loading&&canSearch&&e("div",{style:{display:"flex",gap:"12px",justifyContent:"center",flexWrap:"wrap",marginTop:"20px"}},
-                        ["EH1 1RE","G1 1XQ","AB10 1AF","IV2 3BL","DD1 4HN"].map(function(pc){return e("button",{key:pc,onClick:function(){setPostcode(pc);},
-                            style:{padding:"8px 16px",borderRadius:"8px",border:"1px solid #D1FAE5",backgroundColor:"#F0FFF4",color:"#2D6A4F",fontWeight:600,fontSize:"13px",cursor:"pointer",fontFamily:"'JetBrains Mono',monospace"}},pc);})
-                    ),
-                    // Attribution
-                    e("div",{style:{padding:"16px 20px",borderRadius:"12px",backgroundColor:"#F9FAFB",border:"1px solid #E5E7EB",fontSize:"11px",color:"#9CA3AF",lineHeight:1.6}},
-                        e("div",{style:{fontWeight:600,color:"#6B7280",marginBottom:"4px"}},"Data sources & attribution"),
-                        e("div",null,
-                            "Protected sites: ",e("a",{href:"https://gis-downloads.nature.scot/",style:{color:"#40916C"}},"NatureScot GeoJSON downloads")," — Contains NatureScot information licensed under the Open Government Licence v3.0. ",
-                            "Species data: ",e("a",{href:"https://nbnatlas.org/",style:{color:"#40916C"}},"NBN Atlas")," (live API, CC-BY/CC-BY-NC). ",
-                            "Postcodes: ",e("a",{href:"https://postcodes.io/",style:{color:"#40916C"}},"Postcodes.io")," — contains OS data © Crown copyright."
+                e("div",{style:{maxWidth:960,margin:"0 auto",padding:"24px"}},
+                    e("div",{style:{display:"flex",flexDirection:"column",gap:"20px"}},
+                        e(StatusBanner,{status:apiStatus}),
+                        activeTab==="national"&&e(NationalPage,{data:natData}),
+                        activeTab==="regional"&&e(RegionalPage,{data:regData}),
+                        activeTab==="postcode"&&e(PostcodePage,{allSites:allSites,apiStatus:apiStatus}),
+                        e("div",{style:{padding:"14px 18px",borderRadius:"12px",backgroundColor:"#F9FAFB",border:"1px solid #E5E7EB",fontSize:"11px",color:"#9CA3AF",lineHeight:1.6}},
+                            e("span",{style:{fontWeight:600,color:"#6B7280"}},"Data: "),
+                            "Protected sites: ",e("a",{href:"https://gis-downloads.nature.scot/",style:{color:"#40916C"}},"NatureScot")," (OGL v3.0) · ",
+                            "Species: ",e("a",{href:"https://nbnatlas.org/",style:{color:"#40916C"}},"NBN Atlas")," (CC-BY/CC-BY-NC) · ",
+                            "Postcodes: ",e("a",{href:"https://postcodes.io/",style:{color:"#40916C"}},"Postcodes.io")," (OS data © Crown copyright)"
                         )
                     )
                 )
