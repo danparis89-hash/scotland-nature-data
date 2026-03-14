@@ -155,15 +155,17 @@ function NationalPage({ data }) {
 
 function RegionalPage({ data }) {
   const [selected, setSelected] = useState(null);
-  const [sortBy, setSortBy] = useState("sites"); // "sites" | "area"
+  const [sortBy, setSortBy] = useState("alpha"); // "alpha" | "sites" | "area"
 
   if (!data) return (
     <div style={{ padding: "48px", textAlign: "center", color: "#6B7280" }}>Loading regional data…</div>
   );
 
-  const regions = [...data.regions].sort((a, b) =>
-    sortBy === "area" ? b.total_area_ha - a.total_area_ha : b.total_sites - a.total_sites
-  );
+  const regions = [...data.regions].sort((a, b) => {
+    if (sortBy === "alpha") return a.local_authority.localeCompare(b.local_authority);
+    if (sortBy === "area") return b.total_area_ha - a.total_area_ha;
+    return b.total_sites - a.total_sites;
+  });
 
   const maxVal = sortBy === "area"
     ? Math.max(...regions.map(r => r.total_area_ha))
@@ -179,7 +181,7 @@ function RegionalPage({ data }) {
           {data.total_regions} Scottish council areas · {data.regions.reduce((s, r) => s + r.total_sites, 0).toLocaleString()} designated sites
         </div>
         <div style={{ display: "flex", gap: "6px" }}>
-          {[["sites", "By site count"], ["area", "By area (ha)"]].map(([val, label]) => (
+          {[["alpha", "A–Z"], ["sites", "By site count"], ["area", "By area (ha)"]].map(([val, label]) => (
             <button key={val} onClick={() => setSortBy(val)} style={{
               padding: "5px 12px", borderRadius: "6px", border: "1px solid",
               borderColor: sortBy === val ? "#40916C" : "#D1D5DB",
@@ -209,7 +211,9 @@ function RegionalPage({ data }) {
                   cursor: "pointer", transition: "background 0.15s",
                 }}>
                 {/* Rank */}
-                <div style={{ width: 24, fontSize: "11px", color: "#9CA3AF", textAlign: "right", fontFamily: "'JetBrains Mono', monospace", flexShrink: 0 }}>{i + 1}</div>
+                {sortBy !== "alpha" && (
+                  <div style={{ width: 24, fontSize: "11px", color: "#9CA3AF", textAlign: "right", fontFamily: "'JetBrains Mono', monospace", flexShrink: 0 }}>{i + 1}</div>
+                )}
                 {/* Name */}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 600, fontSize: "13px", color: isSelected ? "#1B4332" : "#374151", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
