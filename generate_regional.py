@@ -1,5 +1,17 @@
 #!/usr/bin/env python3
-"""Generate regional.json using nearest-centroid assignment to Scottish council areas."""
+"""Generate regional.json using radius-based multi-assignment to Scottish council areas.
+
+Each site is assigned to every council area whose centroid falls within the
+site's approximate radius (treating the site as a circle of equivalent area).
+This ensures trans-boundary sites (e.g. Firth of Forth Ramsar) appear in all
+relevant council areas rather than just the one whose centroid happens to be
+nearest.  Sites whose approximate radius contains no council centroid fall back
+to single nearest-centroid assignment, so small sites are handled correctly too.
+
+Because a large site may be counted in more than one council area, the sum of
+regional totals can exceed the national total.  The 'method' field in the JSON
+and the UI note document this explicitly.
+"""
 
 import json, math, datetime
 
@@ -52,37 +64,62 @@ def haversine(lat1, lon1, lat2, lon2):
 def nearest_council(lat, lon):
     return min(COUNCIL_CENTROIDS, key=lambda c: haversine(lat, lon, *COUNCIL_CENTROIDS[c]))
 
+def site_radius_km(area_ha):
+    """Approximate radius of a circle with the same area as the site."""
+    if not area_ha or area_ha <= 0:
+        return 0.0
+    return math.sqrt((area_ha * 10000) / math.pi) / 1000
+
+def councils_for_site(lat, lon, area_ha):
+    """Return every council whose centroid lies within the site's footprint.
+
+    A 1.5× multiplier on the area-derived radius is applied so that large
+    irregular sites (estuaries, long sea lochs) whose circular approximation
+    undershoots are still attributed to councils along their fringes.  For
+    small sites the equivalent-circle radius is only 1–3 km, far smaller than
+    the separation between any two council centroids, so the multiplier does
+    not cause spurious extra assignments there.
+
+    Falls back to single nearest-centroid for any site whose radius contains
+    no council centroid even after the multiplier.
+    """
+    radius = site_radius_km(area_ha) * 1.5
+    inside = [c for c, (clat, clon) in COUNCIL_CENTROIDS.items()
+              if haversine(lat, lon, clat, clon) <= radius]
+    return inside if inside else [nearest_council(lat, lon)]
+
 with open(SITES_FILE) as f:
     sites = json.load(f)
 
-print(f"Assigning {len(sites)} sites to council areas...")
+print(f"Assigning {len(sites)} sites to council areas (radius-based multi-assignment)...")
 
 by_la = {}
 for site in sites:
     lat, lon = site.get("centroid_lat"), site.get("centroid_lon")
     if lat is None or lon is None:
-        la = "Unknown"
+        las = ["Unknown"]
     else:
-        la = nearest_council(lat, lon)
+        las = councils_for_site(lat, lon, site.get("area_ha") or 0)
 
-    if la not in by_la:
-        by_la[la] = {
-            "local_authority": la,
-            "total_sites": 0,
-            "total_area_ha": 0.0,
-            "by_type": {},
-            "largest_sites": [],
-        }
-    entry = by_la[la]
-    entry["total_sites"] += 1
-    entry["total_area_ha"] = round(entry["total_area_ha"] + (site.get("area_ha") or 0), 2)
-    t = site.get("type", "Unknown")
-    entry["by_type"][t] = entry["by_type"].get(t, 0) + 1
-    entry["largest_sites"].append({
-        "name": site["name"],
-        "type": t,
-        "area_ha": site.get("area_ha"),
-    })
+    for la in las:
+        if la not in by_la:
+            by_la[la] = {
+                "local_authority": la,
+                "total_sites": 0,
+                "total_area_ha": 0.0,
+                "by_type": {},
+                "largest_sites": [],
+            }
+        entry = by_la[la]
+        entry["total_sites"] += 1
+        entry["total_area_ha"] = round(entry["total_area_ha"] + (site.get("area_ha") or 0), 2)
+        t = site.get("type", "Unknown")
+        entry["by_type"][t] = entry["by_type"].get(t, 0) + 1
+        entry["largest_sites"].append({
+            "name": site["name"],
+            "type": t,
+            "area_ha": site.get("area_ha"),
+        })
 
 # Keep top 10 largest sites per LA
 for r in by_la.values():
@@ -92,7 +129,7 @@ regions = sorted(by_la.values(), key=lambda x: x["total_sites"], reverse=True)
 
 out = {
     "generated": datetime.datetime.utcnow().isoformat(),
-    "method": "nearest-centroid assignment to 32 Scottish council areas",
+    "method": "radius-based multi-assignment to 32 Scottish council areas (sites counted in every council whose centroid falls within the site's approximate footprint)",
     "total_regions": len(regions),
     "regions": regions,
 }
