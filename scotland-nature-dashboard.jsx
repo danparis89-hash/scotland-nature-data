@@ -388,10 +388,25 @@ function SpeciesPanel({ groups, onSelectGroup, selectedGroup, speciesList, loadi
   );
 }
 
+// Approximate a site's radius from its area (treating it as a circle of equivalent area).
+// This lets us detect when a postcode is near the *boundary* of a large site whose
+// centroid may be far away (e.g. the Firth of Forth Ramsar site).
+function siteApproxRadiusKm(area_ha) {
+  if (!area_ha || area_ha <= 0) return 0;
+  return Math.sqrt((area_ha * 10000) / Math.PI) / 1000;
+}
+
 function NearbySitesPanel({ sites, lat, lon, radius, onRadiusChange }) {
   const nearby = sites
     .filter(s => s.centroid_lat && s.centroid_lon)
-    .map(s => ({ ...s, distance: haversineKm(lat, lon, s.centroid_lat, s.centroid_lon) }))
+    .map(s => {
+      const centroidDist = haversineKm(lat, lon, s.centroid_lat, s.centroid_lon);
+      const siteRadius = siteApproxRadiusKm(s.area_ha);
+      // Distance to the nearest point on the (approximated) site boundary.
+      // Negative means the postcode is inside the site; clamp to 0.
+      const boundaryDist = Math.max(0, centroidDist - siteRadius);
+      return { ...s, distance: boundaryDist, centroidDist };
+    })
     .filter(s => s.distance <= radius)
     .sort((a, b) => a.distance - b.distance);
 
@@ -404,7 +419,7 @@ function NearbySitesPanel({ sites, lat, lon, radius, onRadiusChange }) {
         <div>
           <h2 style={{ margin: 0, fontSize: "16px", fontWeight: 700, color: "#1B4332" }}>📍 Protected Sites Nearby</h2>
           <p style={{ margin: "2px 0 0", fontSize: "12px", color: "#9CA3AF" }}>
-            {nearby.length} site{nearby.length !== 1 ? "s" : ""} within {radius}km · Source: NatureScot open data
+            {nearby.length} site{nearby.length !== 1 ? "s" : ""} within {radius}km · distances to nearest boundary · Source: NatureScot open data
           </p>
         </div>
         <select value={radius} onChange={(e) => onRadiusChange(Number(e.target.value))} style={{
@@ -448,7 +463,7 @@ function NearbySitesPanel({ sites, lat, lon, radius, onRadiusChange }) {
                     </div>
                   </div>
                   <div style={{ fontSize: "13px", fontWeight: 600, color: "#40916C", whiteSpace: "nowrap", fontFamily: "'JetBrains Mono', monospace" }}>
-                    {site.distance.toFixed(1)} km
+                    {site.distance === 0 ? "within site" : `${site.distance.toFixed(1)} km`}
                   </div>
                 </div>
               ))}
