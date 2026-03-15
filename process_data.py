@@ -90,7 +90,26 @@ for gdf in all_sites:
     subset["area_ha"]   = gdf[area_col].round(2) if area_col else None
     sites_for_join.append(subset)
 
-print(f"\n  Total sites loaded: {len(sites_rows)}")
+print(f"\n  Total sites loaded: {len(sites_rows)} features (before deduplication)")
+
+# Deduplicate multi-polygon sites: large sites like Firth of Forth SSSI are
+# stored as multiple separate features in the GeoJSON (one per management unit).
+# Merge them into one entry, summing areas and keeping the first centroid.
+seen_keys = {}
+deduped_rows = []
+for s in sites_rows:
+    key = (s["name"], s["type"])
+    if key not in seen_keys:
+        seen_keys[key] = len(deduped_rows)
+        deduped_rows.append(dict(s))
+    else:
+        idx = seen_keys[key]
+        if s["area_ha"] is not None and deduped_rows[idx]["area_ha"] is not None:
+            deduped_rows[idx]["area_ha"] = round(deduped_rows[idx]["area_ha"] + s["area_ha"], 2)
+        elif s["area_ha"] is not None:
+            deduped_rows[idx]["area_ha"] = s["area_ha"]
+sites_rows = deduped_rows
+print(f"  After deduplication: {len(sites_rows)} unique sites")
 
 # ─── STEP 2: Assign sites to local authorities via polygon intersection ────────
 print("\n=== STEP 2: Assigning sites to local authorities ===")
