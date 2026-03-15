@@ -1,0 +1,160 @@
+{
+  "SSSI": {
+    "columns": [
+      "NAME",
+      "PA_CODE",
+      "STATUS",
+      "EUROPEAN_C",
+      "TYPE",
+      "SITE_HA",
+      "FEATURE_HA",
+      "UPDATED",
+      "MPA_NETWOR",
+      "GEOGRAPHIC",
+      "Shape_Leng",
+      "Shape_Area",
+      "geometry"
+    ],
+    "row_count": 15877,
+    "sample_values": {
+      "NAME": "Shielton Peatlands",
+      "PA_CODE": "1426",
+      "STATUS": "Current",
+      "EUROPEAN_C": "136090",
+      "TYPE": "BIOLOGICAL",
+      "SITE_HA": "5631.97",
+      "FEATURE_HA": "5631.97",
+      "UPDATED": "2022-03-30 00:00:00",
+      "MPA_NETWOR": "N",
+      "GEOGRAPHIC": "TERRESTRIAL",
+      "Shape_Leng": "55952.3943206",
+      "Shape_Area": "56319743.4392"
+    }
+  },
+  "SAC": {
+    "columns": [
+      "NAME",
+      "PA_CODE",
+      "STATUS",
+      "EUROPEAN_C",
+      "TYPE",
+      "SITE_HA",
+      "FEATURE_HA",
+      "UPDATED",
+      "MPA_NETWOR",
+      "GEOGRAPHIC",
+      "Shape_Leng",
+      "Shape_Area",
+      "geometry"
+    ],
+    "row_count": 2593,
+    "sample_values": {
+      "NAME": "Fannich Hills",
+      "PA_CODE": "8634",
+      "STATUS": "Current",
+      "EUROPEAN_C": "UK0030342",
+      "TYPE": "BIOLOGICAL",
+      "SITE_HA": "9639.4",
+      "FEATURE_HA": "9639.4",
+      "UPDATED": "2013-12-06 00:00:00",
+      "MPA_NETWOR": "N",
+      "GEOGRAPHIC": "TERRESTRIAL",
+      "Shape_Leng": "48448.348268",
+      "Shape_Area": "96394030.4846"
+    }
+  },
+  "SPA": {
+    "columns": [
+      "NAME",
+      "PA_CODE",
+      "STATUS",
+      "EUROPEAN_C",
+      "TYPE",
+      "SITE_HA",
+      "FEATURE_HA",
+      "UPDATED",
+      "MPA_NETWOR",
+      "GEOGRAPHIC",
+      "Shape_Leng",
+      "Shape_Area",
+      "geometry"
+    ],
+    "row_count": 2477,
+    "sample_values": {
+      "NAME": "East Sanday Coast",
+      "PA_CODE": "8493",
+      "STATUS": "Current",
+      "EUROPEAN_C": "UK9002331",
+      "TYPE": "BIOLOGICAL",
+      "SITE_HA": "1508.2",
+      "FEATURE_HA": "0.0",
+      "UPDATED": "2013-12-06 00:00:00",
+      "MPA_NETWOR": "Y",
+      "GEOGRAPHIC": "MIXED",
+      "Shape_Leng": "26.0616999626",
+      "Shape_Area": "42.0200000001"
+    }
+  },
+  "NNR": {
+    "columns": [
+      "NAME",
+      "PA_CODE",
+      "STATUS",
+      "EUROPEAN_C",
+      "TYPE",
+      "PHOTOID",
+      "LINK",
+      "SITE_HA",
+      "FEATURE_HA",
+      "MPA_NETWOR",
+      "GEOGRAPHIC",
+      "Shape_Leng",
+      "Shape_Area",
+      "geometry"
+    ],
+    "row_count": 747,
+    "sample_values": {
+      "NAME": "St Kilda",
+      "PA_CODE": "5064.0",
+      "STATUS": "Current",
+      "EUROPEAN_C": "1475",
+      "TYPE": "MIXED",
+      "PHOTOID": "35",
+      "LINK": "http://www.nnr-scotland.org.uk/st-kilda/",
+      "SITE_HA": "871.86",
+      "FEATURE_HA": "0.02",
+      "MPA_NETWOR": "N",
+      "GEOGRAPHIC": "MIXED",
+      "Shape_Leng": "65.7243986131",
+      "Shape_Area": "245.13255"
+    }
+  },
+  "Ramsar": {
+    "columns": [
+      "NAME",
+      "PA_CODE",
+      "STATUS",
+      "EUROPEAN_C",
+      "SITE_HA",
+      "FEATURE_HA",
+      "MPA_NETWOR",
+      "GEOGRAPHIC",
+      "Shape_Leng",
+      "Shape_Area",
+      "geometry"
+    ],
+    "row_count": 2271,
+    "sample_values": {
+      "NAME": "Gruinart Flats, Islay",
+      "PA_CODE": "8428",
+      "STATUS": "Current",
+      "EUROPEAN_C": "UK13023",
+      "SITE_HA": "3262.13",
+      "FEATURE_HA": "0.002325",
+      "MPA_NETWOR": "Y",
+      "GEOGRAPHIC": "MIXED",
+      "Shape_Leng": "20.8523813395",
+      "Shape_Area": "23.25"
+    }
+  }
+}
