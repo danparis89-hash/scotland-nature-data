@@ -148,10 +148,11 @@
         // ── Regional page ─────────────────────────────────────────────────────
 
         function RegionalPage(p){
-            var data=p.data;
+            var data=p.data, error=p.error;
             var _s=useState("alpha"), sortBy=_s[0], setSortBy=_s[1];
             var _sel=useState(null), selected=_sel[0], setSelected=_sel[1];
-            if(!data) return e("div",{style:{padding:"48px",textAlign:"center",color:"#6B7280"}},"Loading regional data…");
+            if(error) return e("div",{style:{padding:"48px",textAlign:"center",color:"#DC2626",fontSize:"13px"}},"Regional data could not be loaded. Please regenerate the data files and ensure regional.json is deployed.");
+            if(!data||!Array.isArray(data.regions)) return e("div",{style:{padding:"48px",textAlign:"center",color:"#6B7280"}},"Loading regional data…");
             var regions=[].concat(data.regions).sort(function(a,b){
                 if(sortBy==="alpha")return a.local_authority.localeCompare(b.local_authority);
                 if(sortBy==="area")return b.total_area_ha-a.total_area_ha;
@@ -331,6 +332,9 @@
 
         function NearbySitesPanel(p){
             var sites=p.sites,lat=p.lat,lon=p.lon,radius=p.radius,onRadiusChange=p.onRadiusChange;
+            // Deduplicate by name+type: large sites like Firth of Forth are stored as
+            // hundreds of separate polygon features; keep only the closest polygon boundary.
+            var seen={};
             var nearby=sites
                 .filter(function(s){return s.centroid_lat&&s.centroid_lon;})
                 .map(function(s){
@@ -339,7 +343,13 @@
                     return Object.assign({},s,{distance:bd});
                 })
                 .filter(function(s){return s.distance<=radius;})
-                .sort(function(a,b){return a.distance-b.distance;});
+                .sort(function(a,b){return a.distance-b.distance;})
+                .filter(function(s){
+                    var key=s.name+"|"+s.type;
+                    if(seen[key])return false;
+                    seen[key]=true;
+                    return true;
+                });
             var byType={};
             nearby.forEach(function(s){byType[s.type]=(byType[s.type]||0)+1;});
             return e("div",{style:{backgroundColor:"#fff",borderRadius:"16px",border:"1px solid #E5E7EB",overflow:"hidden"}},
@@ -483,13 +493,14 @@
             var _api=useState(null), apiStatus=_api[0], setApiStatus=_api[1];
             var _nat=useState(null), natData=_nat[0], setNatData=_nat[1];
             var _reg=useState(null), regData=_reg[0], setRegData=_reg[1];
+            var _re=useState(false), regError=_re[0], setRegError=_re[1];
             var _sites=useState(null), allSites=_sites[0], setAllSites=_sites[1];
 
             useEffect(function(){
                 var s={github:false,postcodes:false,nbn:false};
                 Promise.all([
                     fetch(GITHUB_DATA+"/national.json").then(function(r){if(r.ok)return r.json();throw 0;}).then(function(d){setNatData(d);s.github=true;}).catch(function(){}),
-                    fetch(GITHUB_DATA+"/regional.json").then(function(r){if(r.ok)return r.json();throw 0;}).then(function(d){setRegData(d);s.github=true;}).catch(function(){}),
+                    fetch(GITHUB_DATA+"/regional.json").then(function(r){if(r.ok)return r.json();throw 0;}).then(function(d){setRegData(d);s.github=true;}).catch(function(){setRegError(true);}),
                     fetch(GITHUB_DATA+"/sites.json").then(function(r){if(r.ok)return r.json();throw 0;}).then(function(d){setAllSites(d);s.github=true;}).catch(function(){}),
                     fetch("https://api.postcodes.io/postcodes/EH11RE").then(function(r){s.postcodes=r.ok;}).catch(function(){}),
                     fetch("https://records-ws.nbnatlas.org/explore/groups?lat=55.95&lon=-3.19&radius=1").then(function(r){s.nbn=r.ok;}).catch(function(){})
@@ -517,7 +528,7 @@
                     e("div",{style:{display:"flex",flexDirection:"column",gap:"20px"}},
                         e(StatusBanner,{status:apiStatus}),
                         activeTab==="national"&&e(NationalPage,{data:natData}),
-                        activeTab==="regional"&&e(RegionalPage,{data:regData}),
+                        activeTab==="regional"&&e(RegionalPage,{data:regData,error:regError}),
                         activeTab==="postcode"&&e(PostcodePage,{allSites:allSites,apiStatus:apiStatus}),
                         e("div",{style:{padding:"14px 18px",borderRadius:"12px",backgroundColor:"#F9FAFB",border:"1px solid #E5E7EB",fontSize:"11px",color:"#9CA3AF",lineHeight:1.6}},
                             e("span",{style:{fontWeight:600,color:"#6B7280"}},"Data: "),
