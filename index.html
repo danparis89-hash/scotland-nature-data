@@ -265,7 +265,7 @@
                         )
                     )
                 ),
-                e("div",{style:{fontSize:"11px",color:"#9CA3AF",lineHeight:1.5}},"Council area boundaries approximated via nearest-centroid assignment. Source: NatureScot open data (OGL v3.0).")
+                e("div",{style:{fontSize:"11px",color:"#9CA3AF",lineHeight:1.5}},"Trans-boundary sites are counted in every council area whose centroid falls within the site's approximate footprint, so regional totals may exceed the national total. Source: NatureScot open data (OGL v3.0).")
             );
         }
 
@@ -374,7 +374,7 @@
                                             )
                                         ),
                                         e("div",{style:{fontSize:"13px",fontWeight:600,color:"#40916C",whiteSpace:"nowrap",fontFamily:"'JetBrains Mono',monospace"}},
-                                            s.distance===0?"within site":s.distance.toFixed(1)+" km")
+                                            s.distance.toFixed(1)+" km")
                                     );
                                 })
                             ),

@@ -1,6 +1,6 @@
 {
-  "generated": "2026-03-14T18:58:15.691688",
-  "method": "nearest-centroid assignment to 32 Scottish council areas",
+  "generated": "2026-03-14T21:48:35.318538",
+  "method": "radius-based multi-assignment to 32 Scottish council areas (sites counted in every council whose centroid falls within the site's approximate footprint)",
   "total_regions": 32,
   "regions": [
     {
@@ -705,6 +705,70 @@
       ]
     },
     {
+      "local_authority": "Angus",
+      "total_sites": 60,
+      "total_area_ha": 1958143.01,
+      "by_type": {
+        "NNR": 2,
+        "Ramsar": 4,
+        "SAC": 6,
+        "SPA": 9,
+        "SSSI": 39
+      },
+      "largest_sites": [
+        {
+          "name": "Firth of Tay and Eden Estuary",
+          "type": "Ramsar",
+          "area_ha": 715604.86
+        },
+        {
+          "name": "Firth of Tay and Eden Estuary",
+          "type": "SPA",
+          "area_ha": 715604.86
+        },
+        {
+          "name": "Cairngorms",
+          "type": "SPA",
+          "area_ha": 254577.7
+        },
+        {
+          "name": "Cairngorms Massif",
+          "type": "SPA",
+          "area_ha": 187500.95
+        },
+        {
+          "name": "Whiting Ness - Ethie Haven",
+          "type": "SSSI",
+          "area_ha": 23273.1
+        },
+        {
+          "name": "Eastern Cairngorms",
+          "type": "SSSI",
+          "area_ha": 16506.99
+        },
+        {
+          "name": "Rickle Craig - Scurdie Ness",
+          "type": "SSSI",
+          "area_ha": 7861.08
+        },
+        {
+          "name": "Caenlochan",
+          "type": "SPA",
+          "area_ha": 5972.57
+        },
+        {
+          "name": "Caenlochan",
+          "type": "SAC",
+          "area_ha": 5202.24
+        },
+        {
+          "name": "Caenlochan",
+          "type": "SSSI",
+          "area_ha": 4972.92
+        }
+      ]
+    },
+    {
       "local_authority": "Aberdeenshire",
       "total_sites": 59,
       "total_area_ha": 219169.59,
@@ -769,66 +833,65 @@
       ]
     },
     {
-      "local_authority": "Angus",
-      "total_sites": 58,
-      "total_area_ha": 526933.29,
+      "local_authority": "South Lanarkshire",
+      "total_sites": 43,
+      "total_area_ha": 170014.06,
       "by_type": {
-        "NNR": 2,
-        "Ramsar": 3,
+        "NNR": 1,
         "SAC": 6,
-        "SPA": 8,
-        "SSSI": 39
+        "SPA": 1,
+        "SSSI": 35
       },
       "largest_sites": [
         {
-          "name": "Cairngorms",
+          "name": "Muirkirk and North Lowther Uplands",
           "type": "SPA",
-          "area_ha": 254577.7
+          "area_ha": 134162.35
         },
         {
-          "name": "Cairngorms Massif",
-          "type": "SPA",
-          "area_ha": 187500.95
-        },
-        {
-          "name": "Whiting Ness - Ethie Haven",
+          "name": "Tweedsmuir Hills",
           "type": "SSSI",
-          "area_ha": 23273.1
+          "area_ha": 8896.77
         },
         {
-          "name": "Eastern Cairngorms",
+          "name": "North Lowther Uplands",
           "type": "SSSI",
-          "area_ha": 16506.99
+          "area_ha": 7842.58
         },
         {
-          "name": "Rickle Craig - Scurdie Ness",
-          "type": "SSSI",
-          "area_ha": 7861.08
-        },
-        {
-          "name": "Caenlochan",
-          "type": "SPA",
-          "area_ha": 5972.57
-        },
-        {
-          "name": "Caenlochan",
+          "name": "Clyde Valley Woods",
           "type": "SAC",
-          "area_ha": 5202.24
+          "area_ha": 5627.57
         },
         {
-          "name": "Caenlochan",
+          "name": "Tinto Hills",
           "type": "SSSI",
-          "area_ha": 4972.92
+          "area_ha": 2960.36
         },
         {
-          "name": "Montrose Basin",
-          "type": "Ramsar",
-          "area_ha": 1962.28
+          "name": "Moffat Hills",
+          "type": "SSSI",
+          "area_ha": 2890.24
         },
         {
-          "name": "Montrose Basin",
-          "type": "SPA",
-          "area_ha": 1962.28
+          "name": "Moffat Hills",
+          "type": "SAC",
+          "area_ha": 2881.72
+        },
+        {
+          "name": "Clyde Valley Woodlands",
+          "type": "NNR",
+          "area_ha": 2547.68
+        },
+        {
+          "name": "Coalburn Moss",
+          "type": "SAC",
+          "area_ha": 224.51
+        },
+        {
+          "name": "Coalburn Moss",
+          "type": "SSSI",
+          "area_ha": 224.51
         }
       ]
     },
@@ -893,68 +956,6 @@
           "name": "Eden Estuary",
           "type": "SSSI",
           "area_ha": 1091.68
-        }
-      ]
-    },
-    {
-      "local_authority": "South Lanarkshire",
-      "total_sites": 42,
-      "total_area_ha": 35851.71,
-      "by_type": {
-        "NNR": 1,
-        "SAC": 6,
-        "SSSI": 35
-      },
-      "largest_sites": [
-        {
-          "name": "Tweedsmuir Hills",
-          "type": "SSSI",
-          "area_ha": 8896.77
-        },
-        {
-          "name": "North Lowther Uplands",
-          "type": "SSSI",
-          "area_ha": 7842.58
-        },
-        {
-          "name": "Clyde Valley Woods",
-          "type": "SAC",
-          "area_ha": 5627.57
-        },
-        {
-          "name": "Tinto Hills",
-          "type": "SSSI",
-          "area_ha": 2960.36
-        },
-        {
-          "name": "Moffat Hills",
-          "type": "SSSI",
-          "area_ha": 2890.24
-        },
-        {
-          "name": "Moffat Hills",
-          "type": "SAC",
-          "area_ha": 2881.72
-        },
-        {
-          "name": "Clyde Valley Woodlands",
-          "type": "NNR",
-          "area_ha": 2547.68
-        },
-        {
-          "name": "Coalburn Moss",
-          "type": "SAC",
-          "area_ha": 224.51
-        },
-        {
-          "name": "Coalburn Moss",
-          "type": "SSSI",
-          "area_ha": 224.51
-        },
-        {
-          "name": "Carstairs Kames",
-          "type": "SSSI",
-          "area_ha": 160.27
         }
       ]
     },
@@ -1087,6 +1088,70 @@
       ]
     },
     {
+      "local_authority": "East Lothian",
+      "total_sites": 41,
+      "total_area_ha": 1459669.67,
+      "by_type": {
+        "NNR": 2,
+        "Ramsar": 1,
+        "SAC": 2,
+        "SPA": 4,
+        "SSSI": 32
+      },
+      "largest_sites": [
+        {
+          "name": "Firth of Forth",
+          "type": "SSSI",
+          "area_ha": 453564.28
+        },
+        {
+          "name": "Outer Firth of Forth and St Andrews Bay Complex",
+          "type": "SPA",
+          "area_ha": 272068.09
+        },
+        {
+          "name": "Firth of Forth",
+          "type": "Ramsar",
+          "area_ha": 233763.41
+        },
+        {
+          "name": "Firth of Forth",
+          "type": "SPA",
+          "area_ha": 233763.41
+        },
+        {
+          "name": "Berwickshire Coast (Intertidal)",
+          "type": "SSSI",
+          "area_ha": 124999.05
+        },
+        {
+          "name": "Forth Islands",
+          "type": "SPA",
+          "area_ha": 48985.05
+        },
+        {
+          "name": "Burnmouth Coast",
+          "type": "SSSI",
+          "area_ha": 38359.05
+        },
+        {
+          "name": "St Abb's Head to Fast Castle",
+          "type": "SSSI",
+          "area_ha": 30571.86
+        },
+        {
+          "name": "Barns Ness Coast",
+          "type": "SSSI",
+          "area_ha": 15172.53
+        },
+        {
+          "name": "Pease Bay Coast",
+          "type": "SSSI",
+          "area_ha": 1886.76
+        }
+      ]
+    },
+    {
       "local_authority": "North Ayrshire",
       "total_sites": 41,
       "total_area_ha": 215140.54,
@@ -1150,80 +1215,47 @@
       ]
     },
     {
-      "local_authority": "East Lothian",
-      "total_sites": 38,
-      "total_area_ha": 538578.57,
-      "by_type": {
-        "NNR": 2,
-        "SAC": 2,
-        "SPA": 3,
-        "SSSI": 31
-      },
-      "largest_sites": [
-        {
-          "name": "Outer Firth of Forth and St Andrews Bay Complex",
-          "type": "SPA",
-          "area_ha": 272068.09
-        },
-        {
-          "name": "Berwickshire Coast (Intertidal)",
-          "type": "SSSI",
-          "area_ha": 124999.05
-        },
-        {
-          "name": "Forth Islands",
-          "type": "SPA",
-          "area_ha": 48985.05
-        },
-        {
-          "name": "Burnmouth Coast",
-          "type": "SSSI",
-          "area_ha": 38359.05
-        },
-        {
-          "name": "St Abb's Head to Fast Castle",
-          "type": "SSSI",
-          "area_ha": 30571.86
-        },
-        {
-          "name": "Barns Ness Coast",
-          "type": "SSSI",
-          "area_ha": 15172.53
-        },
-        {
-          "name": "Pease Bay Coast",
-          "type": "SSSI",
-          "area_ha": 1886.76
-        },
-        {
-          "name": "St Abb's Head to Fast Castle",
-          "type": "SPA",
-          "area_ha": 1736.75
-        },
-        {
-          "name": "Lammer Law",
-          "type": "SSSI",
-          "area_ha": 954.51
-        },
-        {
-          "name": "Isle of May",
-          "type": "NNR",
-          "area_ha": 557.92
-        }
-      ]
-    },
-    {
       "local_authority": "Fife",
-      "total_sites": 29,
-      "total_area_ha": 9683.46,
+      "total_sites": 35,
+      "total_area_ha": 2477706.88,
       "by_type": {
         "NNR": 1,
-        "Ramsar": 1,
+        "Ramsar": 3,
         "SAC": 2,
-        "SPA": 1,
-        "SSSI": 24
+        "SPA": 3,
+        "SSSI": 26
       },
       "largest_sites": [
+        {
+          "name": "Firth of Tay and Eden Estuary",
+          "type": "Ramsar",
+          "area_ha": 715604.86
+        },
+        {
+          "name": "Firth of Tay and Eden Estuary",
+          "type": "SPA",
+          "area_ha": 715604.86
+        },
+        {
+          "name": "Firth of Forth",
+          "type": "SSSI",
+          "area_ha": 453564.28
+        },
+        {
+          "name": "Firth of Forth",
+          "type": "Ramsar",
+          "area_ha": 233763.41
+        },
+        {
+          "name": "Firth of Forth",
+          "type": "SPA",
+          "area_ha": 233763.41
+        },
+        {
+          "name": "Inner Tay Estuary",
+          "type": "SSSI",
+          "area_ha": 115722.6
+        },
         {
           "name": "Loch Leven",
           "type": "NNR",
@@ -1243,47 +1275,34 @@
           "name": "Loch Leven",
           "type": "SPA",
           "area_ha": 1611.29
-        },
-        {
-          "name": "Ballo and Harperleas Reservoirs",
-          "type": "SSSI",
-          "area_ha": 191.12
-        },
-        {
-          "name": "Bishop Hill",
-          "type": "SSSI",
-          "area_ha": 157.17
-        },
-        {
-          "name": "Lindores Loch",
-          "type": "SSSI",
-          "area_ha": 107.8
-        },
-        {
-          "name": "Lacesston Muir and Glen Burn Gorge",
-          "type": "SSSI",
-          "area_ha": 100.37
-        },
-        {
-          "name": "Turflundie Wood",
-          "type": "SAC",
-          "area_ha": 86.59
-        },
-        {
-          "name": "Turflundie Wood",
-          "type": "SSSI",
-          "area_ha": 86.59
         }
       ]
     },
     {
       "local_authority": "Clackmannanshire",
-      "total_sites": 29,
-      "total_area_ha": 2150.37,
+      "total_sites": 32,
+      "total_area_ha": 923241.47,
       "by_type": {
-        "SSSI": 29
+        "Ramsar": 1,
+        "SPA": 1,
+        "SSSI": 30
       },
       "largest_sites": [
+        {
+          "name": "Firth of Forth",
+          "type": "SSSI",
+          "area_ha": 453564.28
+        },
+        {
+          "name": "Firth of Forth",
+          "type": "Ramsar",
+          "area_ha": 233763.41
+        },
+        {
+          "name": "Firth of Forth",
+          "type": "SPA",
+          "area_ha": 233763.41
+        },
         {
           "name": "Dollar Glen",
           "type": "SSSI",
@@ -1318,21 +1337,6 @@
           "name": "Wether Hill",
           "type": "SSSI",
           "area_ha": 95.58
-        },
-        {
-          "name": "Glen Queich",
-          "type": "SSSI",
-          "area_ha": 86.56
-        },
-        {
-          "name": "Devon Gorge",
-          "type": "SSSI",
-          "area_ha": 80.22
-        },
-        {
-          "name": "Mill Glen",
-          "type": "SSSI",
-          "area_ha": 79.52
         }
       ]
     },
@@ -1401,15 +1405,30 @@
     },
     {
       "local_authority": "Midlothian",
-      "total_sites": 24,
-      "total_area_ha": 20002.02,
+      "total_sites": 27,
+      "total_area_ha": 941093.12,
       "by_type": {
-        "Ramsar": 2,
+        "Ramsar": 3,
         "SAC": 2,
-        "SPA": 2,
-        "SSSI": 18
+        "SPA": 3,
+        "SSSI": 19
       },
       "largest_sites": [
+        {
+          "name": "Firth of Forth",
+          "type": "SSSI",
+          "area_ha": 453564.28
+        },
+        {
+          "name": "Firth of Forth",
+          "type": "Ramsar",
+          "area_ha": 233763.41
+        },
+        {
+          "name": "Firth of Forth",
+          "type": "SPA",
+          "area_ha": 233763.41
+        },
         {
           "name": "Moorfoot Hills",
           "type": "SSSI",
@@ -1444,21 +1463,69 @@
           "name": "Dundreich Plateau",
           "type": "SSSI",
           "area_ha": 283.34
-        },
+        }
+      ]
+    },
+    {
+      "local_authority": "West Lothian",
+      "total_sites": 25,
+      "total_area_ha": 922861.18,
+      "by_type": {
+        "Ramsar": 2,
+        "SAC": 1,
+        "SPA": 2,
+        "SSSI": 20
+      },
+      "largest_sites": [
         {
-          "name": "Gladhouse Reservoir",
-          "type": "Ramsar",
-          "area_ha": 186.58
-        },
-        {
-          "name": "Gladhouse Reservoir",
-          "type": "SPA",
-          "area_ha": 186.58
-        },
-        {
-          "name": "Gladhouse Reservoir",
+          "name": "Firth of Forth",
           "type": "SSSI",
-          "area_ha": 186.58
+          "area_ha": 453564.28
+        },
+        {
+          "name": "Firth of Forth",
+          "type": "Ramsar",
+          "area_ha": 233763.41
+        },
+        {
+          "name": "Firth of Forth",
+          "type": "SPA",
+          "area_ha": 233763.41
+        },
+        {
+          "name": "Cobbinshaw Moss",
+          "type": "SSSI",
+          "area_ha": 492.36
+        },
+        {
+          "name": "Craigengar",
+          "type": "SSSI",
+          "area_ha": 304.01
+        },
+        {
+          "name": "Dolphinton - West Linton Fens and Grassland",
+          "type": "SSSI",
+          "area_ha": 258.36
+        },
+        {
+          "name": "North Esk Valley",
+          "type": "SSSI",
+          "area_ha": 85.76
+        },
+        {
+          "name": "Cobbinshaw Reservoir",
+          "type": "SSSI",
+          "area_ha": 60.58
+        },
+        {
+          "name": "Calderwood",
+          "type": "SSSI",
+          "area_ha": 59.95
+        },
+        {
+          "name": "Balerno Common",
+          "type": "SSSI",
+          "area_ha": 56.29
         }
       ]
     },
@@ -1525,69 +1592,6 @@
       ]
     },
     {
-      "local_authority": "West Lothian",
-      "total_sites": 22,
-      "total_area_ha": 1770.08,
-      "by_type": {
-        "Ramsar": 1,
-        "SAC": 1,
-        "SPA": 1,
-        "SSSI": 19
-      },
-      "largest_sites": [
-        {
-          "name": "Cobbinshaw Moss",
-          "type": "SSSI",
-          "area_ha": 492.36
-        },
-        {
-          "name": "Craigengar",
-          "type": "SSSI",
-          "area_ha": 304.01
-        },
-        {
-          "name": "Dolphinton - West Linton Fens and Grassland",
-          "type": "SSSI",
-          "area_ha": 258.36
-        },
-        {
-          "name": "North Esk Valley",
-          "type": "SSSI",
-          "area_ha": 85.76
-        },
-        {
-          "name": "Cobbinshaw Reservoir",
-          "type": "SSSI",
-          "area_ha": 60.58
-        },
-        {
-          "name": "Calderwood",
-          "type": "SSSI",
-          "area_ha": 59.95
-        },
-        {
-          "name": "Balerno Common",
-          "type": "SSSI",
-          "area_ha": 56.29
-        },
-        {
-          "name": "Linlithgow Loch",
-          "type": "SSSI",
-          "area_ha": 51.01
-        },
-        {
-          "name": "Westwater",
-          "type": "Ramsar",
-          "area_ha": 49.8
-        },
-        {
-          "name": "Westwater",
-          "type": "SPA",
-          "area_ha": 49.8
-        }
-      ]
-    },
-    {
       "local_authority": "East Dunbartonshire",
       "total_sites": 20,
       "total_area_ha": 6530.51,
@@ -1645,6 +1649,68 @@
           "name": "Killorn Moss",
           "type": "SSSI",
           "area_ha": 35.24
+        }
+      ]
+    },
+    {
+      "local_authority": "Inverclyde",
+      "total_sites": 17,
+      "total_area_ha": 147849.6,
+      "by_type": {
+        "Ramsar": 1,
+        "SPA": 2,
+        "SSSI": 14
+      },
+      "largest_sites": [
+        {
+          "name": "Inner Clyde",
+          "type": "Ramsar",
+          "area_ha": 36505.8
+        },
+        {
+          "name": "Inner Clyde",
+          "type": "SPA",
+          "area_ha": 36505.8
+        },
+        {
+          "name": "Inner Clyde",
+          "type": "SSSI",
+          "area_ha": 36505.8
+        },
+        {
+          "name": "Renfrewshire Heights",
+          "type": "SPA",
+          "area_ha": 17895.1
+        },
+        {
+          "name": "Renfrewshire Heights",
+          "type": "SSSI",
+          "area_ha": 17895.1
+        },
+        {
+          "name": "North End of Bute",
+          "type": "SSSI",
+          "area_ha": 929.11
+        },
+        {
+          "name": "Ruel Estuary",
+          "type": "SSSI",
+          "area_ha": 630.58
+        },
+        {
+          "name": "Loch Eck",
+          "type": "SSSI",
+          "area_ha": 557.15
+        },
+        {
+          "name": "Dunrod Hill",
+          "type": "SSSI",
+          "area_ha": 236.5
+        },
+        {
+          "name": "Craighoyle Woodland",
+          "type": "SSSI",
+          "area_ha": 77.57
         }
       ]
     },
@@ -1711,75 +1777,30 @@
       ]
     },
     {
-      "local_authority": "Inverclyde",
-      "total_sites": 14,
-      "total_area_ha": 38332.2,
-      "by_type": {
-        "SPA": 1,
-        "SSSI": 13
-      },
-      "largest_sites": [
-        {
-          "name": "Renfrewshire Heights",
-          "type": "SPA",
-          "area_ha": 17895.1
-        },
-        {
-          "name": "Renfrewshire Heights",
-          "type": "SSSI",
-          "area_ha": 17895.1
-        },
-        {
-          "name": "North End of Bute",
-          "type": "SSSI",
-          "area_ha": 929.11
-        },
-        {
-          "name": "Ruel Estuary",
-          "type": "SSSI",
-          "area_ha": 630.58
-        },
-        {
-          "name": "Loch Eck",
-          "type": "SSSI",
-          "area_ha": 557.15
-        },
-        {
-          "name": "Dunrod Hill",
-          "type": "SSSI",
-          "area_ha": 236.5
-        },
-        {
-          "name": "Craighoyle Woodland",
-          "type": "SSSI",
-          "area_ha": 77.57
-        },
-        {
-          "name": "Skelmorlie Glen",
-          "type": "SSSI",
-          "area_ha": 36.5
-        },
-        {
-          "name": "Shielhill Glen",
-          "type": "SSSI",
-          "area_ha": 24.54
-        },
-        {
-          "name": "Glen Moss",
-          "type": "SSSI",
-          "area_ha": 19.44
-        }
-      ]
-    },
-    {
       "local_authority": "Falkirk",
-      "total_sites": 10,
-      "total_area_ha": 6225.96,
+      "total_sites": 13,
+      "total_area_ha": 927317.06,
       "by_type": {
-        "SPA": 1,
-        "SSSI": 9
+        "Ramsar": 1,
+        "SPA": 2,
+        "SSSI": 10
       },
       "largest_sites": [
+        {
+          "name": "Firth of Forth",
+          "type": "SSSI",
+          "area_ha": 453564.28
+        },
+        {
+          "name": "Firth of Forth",
+          "type": "Ramsar",
+          "area_ha": 233763.41
+        },
+        {
+          "name": "Firth of Forth",
+          "type": "SPA",
+          "area_ha": 233763.41
+        },
         {
           "name": "Slamannan Plateau",
           "type": "SPA",
@@ -1814,21 +1835,68 @@
           "name": "Avon Gorge",
           "type": "SSSI",
           "area_ha": 19.34
+        }
+      ]
+    },
+    {
+      "local_authority": "Renfrewshire",
+      "total_sites": 11,
+      "total_area_ha": 109937.02,
+      "by_type": {
+        "Ramsar": 1,
+        "SPA": 2,
+        "SSSI": 8
+      },
+      "largest_sites": [
+        {
+          "name": "Inner Clyde",
+          "type": "Ramsar",
+          "area_ha": 36505.8
         },
         {
-          "name": "Carron Dams",
-          "type": "SSSI",
-          "area_ha": 16.68
+          "name": "Inner Clyde",
+          "type": "SPA",
+          "area_ha": 36505.8
         },
         {
-          "name": "Carriber Glen",
+          "name": "Inner Clyde",
           "type": "SSSI",
-          "area_ha": 10.0
+          "area_ha": 36505.8
         },
         {
-          "name": "Bo'mains Meadow",
+          "name": "Castle Semple and Barr Lochs",
           "type": "SSSI",
-          "area_ha": 0.94
+          "area_ha": 268.71
+        },
+        {
+          "name": "Black Cart",
+          "type": "SPA",
+          "area_ha": 56.0
+        },
+        {
+          "name": "Black Cart",
+          "type": "SSSI",
+          "area_ha": 56.0
+        },
+        {
+          "name": "Loch Libo",
+          "type": "SSSI",
+          "area_ha": 18.16
+        },
+        {
+          "name": "Whinnerston",
+          "type": "SSSI",
+          "area_ha": 10.32
+        },
+        {
+          "name": "Barmufflock Dam",
+          "type": "SSSI",
+          "area_ha": 8.51
+        },
+        {
+          "name": "Shovelboard",
+          "type": "SSSI",
+          "area_ha": 1.9
         }
       ]
     },
@@ -1880,57 +1948,6 @@
           "name": "Rouken Glen",
           "type": "SSSI",
           "area_ha": 3.48
-        }
-      ]
-    },
-    {
-      "local_authority": "Renfrewshire",
-      "total_sites": 8,
-      "total_area_ha": 419.62,
-      "by_type": {
-        "SPA": 1,
-        "SSSI": 7
-      },
-      "largest_sites": [
-        {
-          "name": "Castle Semple and Barr Lochs",
-          "type": "SSSI",
-          "area_ha": 268.71
-        },
-        {
-          "name": "Black Cart",
-          "type": "SPA",
-          "area_ha": 56.0
-        },
-        {
-          "name": "Black Cart",
-          "type": "SSSI",
-          "area_ha": 56.0
-        },
-        {
-          "name": "Loch Libo",
-          "type": "SSSI",
-          "area_ha": 18.16
-        },
-        {
-          "name": "Whinnerston",
-          "type": "SSSI",
-          "area_ha": 10.32
-        },
-        {
-          "name": "Barmufflock Dam",
-          "type": "SSSI",
-          "area_ha": 8.51
-        },
-        {
-          "name": "Shovelboard",
-          "type": "SSSI",
-          "area_ha": 1.9
-        },
-        {
-          "name": "Clochodrick Stone",
-          "type": "SSSI",
-          "area_ha": 0.02
         }
       ]
     },
