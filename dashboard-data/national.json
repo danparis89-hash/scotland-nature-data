@@ -1,12 +1,12 @@
 {
   "designation_counts": {
-    "NNR": 43,
-    "Ramsar": 51,
-    "SAC": 253,
-    "SPA": 164,
-    "SSSI": 1422
+    "SSSI": 15877,
+    "SAC": 2593,
+    "SPA": 2477,
+    "NNR": 747,
+    "Ramsar": 2271
   },
-  "total_sites": 1933,
+  "total_sites": 23965,
   "data_sources": {
     "protected_sites": {
       "provider": "NatureScot",
@@ -15,6 +15,6 @@
       "attribution": "Contains NatureScot information licensed under the Open Government Licence v3.0"
     }
   },
-  "last_processed": "2026-03-13T10:35:27.428255",
+  "last_processed": "2026-03-15T23:06:10.561235",
   "note": "Condition statistics should be added from the NatureScot Official Statistics publication once downloaded."
 }
