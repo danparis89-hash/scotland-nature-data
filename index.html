@@ -18,6 +18,8 @@
         input:focus { outline: none; border-color: #40916C !important; box-shadow: 0 0 0 3px rgba(64,145,108,0.15) !important; }
         button:hover { opacity: 0.88; }
     </style>
+    <!-- regional data pre-loaded as a script so it works from file:// and any HTTP server -->
+    <script src="dashboard-data/regional.js" onerror="window.__regionalData=null"></script>
 </head>
 <body>
     <div id="root"><div style="padding:40px;font-family:sans-serif;color:#555">Loading Scotland Nature Dashboard…</div></div>
@@ -497,7 +499,7 @@
             var _tab=useState("national"), activeTab=_tab[0], setActiveTab=_tab[1];
             var _api=useState(null), apiStatus=_api[0], setApiStatus=_api[1];
             var _nat=useState(null), natData=_nat[0], setNatData=_nat[1];
-            var _reg=useState(null), regData=_reg[0], setRegData=_reg[1];
+            var _reg=useState(window.__regionalData||null), regData=_reg[0], setRegData=_reg[1];
             var _re=useState(false), regError=_re[0], setRegError=_re[1];
             var _sites=useState(null), allSites=_sites[0], setAllSites=_sites[1];
 

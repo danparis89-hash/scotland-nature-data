@@ -187,6 +187,11 @@ if la_site_counts is not None:
     p = OUTPUT_DIR / "regional.json"
     p.write_text(json.dumps(regional_out, indent=2))
     print(f"  Written: {p}")
+    # Also write a JS shim so the dashboard can load regional data via <script>
+    # tag – this works from file:// and any HTTP server without CORS issues.
+    js_p = OUTPUT_DIR / "regional.js"
+    js_p.write_text("window.__regionalData=" + json.dumps(regional_out, separators=(",",":")) + ";")
+    print(f"  Written: {js_p}")
 
 # --- sites.json ---
 p = OUTPUT_DIR / "sites.json"
