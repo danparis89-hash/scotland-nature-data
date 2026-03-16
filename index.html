@@ -159,23 +159,31 @@
             var _s=useState("alpha"), sortBy=_s[0], setSortBy=_s[1];
             var _sel=useState(null), selected=_sel[0], setSelected=_sel[1];
             if(error) return e("div",{style:{padding:"48px",textAlign:"center",color:"#DC2626",fontSize:"13px"}},"Regional data could not be loaded. Please regenerate the data files and ensure regional.json is deployed.");
-            if(!data||!Array.isArray(data.regions)) return e("div",{style:{padding:"48px",textAlign:"center",color:"#6B7280"}},"Loading regional data…");
-            var regions=[].concat(data.regions).sort(function(a,b){
+            // Normalise: accept plain array OR wrapped {regions:[...]} object
+            var rawRows=Array.isArray(data)?data:(data&&Array.isArray(data.regions)?data.regions:null);
+            if(!rawRows) return e("div",{style:{padding:"48px",textAlign:"center",color:"#6B7280"}},"Loading regional data…");
+            // Normalise region objects: accept both by_type and designation_counts field names
+            var norm=rawRows.map(function(r){return{
+                local_authority:r.local_authority,
+                total_sites:r.total_sites||0,
+                total_area_ha:r.total_area_ha||null,
+                by_type:r.by_type||r.designation_counts||{},
+                largest_sites:r.largest_sites||[]
+            };});
+            var hasArea=norm.some(function(r){return r.total_area_ha;});
+            var regions=[].concat(norm).sort(function(a,b){
                 if(sortBy==="alpha")return a.local_authority.localeCompare(b.local_authority);
-                if(sortBy==="area")return b.total_area_ha-a.total_area_ha;
                 return b.total_sites-a.total_sites;
             });
-            var maxVal=sortBy==="area"
-                ?Math.max.apply(null,regions.map(function(r){return r.total_area_ha;}))
-                :Math.max.apply(null,regions.map(function(r){return r.total_sites;}));
-            var selectedRegion=selected?data.regions.find(function(r){return r.local_authority===selected;}):null;
+            var maxVal=Math.max.apply(null,regions.map(function(r){return r.total_sites;}));
+            var selectedRegion=selected?norm.find(function(r){return r.local_authority===selected;}):null;
             return e("div",{style:{display:"flex",flexDirection:"column",gap:"20px"}},
                 e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"12px",flexWrap:"wrap"}},
                     e("div",{style:{fontSize:"13px",color:"#6B7280"}},
-                        data.total_regions+" Scottish council areas · "+data.regions.reduce(function(s,r){return s+r.total_sites;},0).toLocaleString()+" designated sites"
+                        norm.length+" Scottish council areas · "+norm.reduce(function(s,r){return s+r.total_sites;},0).toLocaleString()+" designated sites"
                     ),
                     e("div",{style:{display:"flex",gap:"6px"}},
-                        [["alpha","A–Z"],["sites","By site count"],["area","By area (ha)"]].map(function(v){
+                        [["alpha","A–Z"],["sites","By site count"]].map(function(v){
                             return e("button",{key:v[0],onClick:function(){setSortBy(v[0]);},style:{
                                 padding:"5px 12px",borderRadius:"6px",border:"1px solid",
                                 borderColor:sortBy===v[0]?"#40916C":"#D1D5DB",
@@ -190,8 +198,7 @@
                 e("div",{style:{display:"grid",gridTemplateColumns:selected?"1fr 340px":"1fr",gap:"16px",alignItems:"start"}},
                     e("div",{style:{backgroundColor:"#fff",borderRadius:"16px",border:"1px solid #E5E7EB",overflow:"hidden"}},
                         regions.map(function(r,i){
-                            var val=sortBy==="area"?r.total_area_ha:r.total_sites;
-                            var pct=maxVal>0?(val/maxVal)*100:0;
+                            var pct=maxVal>0?(r.total_sites/maxVal)*100:0;
                             var isSel=r.local_authority===selected;
                             return e("div",{key:r.local_authority,
                                 onClick:function(){setSelected(isSel?null:r.local_authority);},
@@ -215,9 +222,7 @@
                                     )
                                 ),
                                 e("div",{style:{width:72,textAlign:"right",fontSize:"13px",fontWeight:700,color:isSel?"#1B4332":"#40916C",fontFamily:"'JetBrains Mono',monospace",flexShrink:0}},
-                                    sortBy==="area"
-                                        ?(r.total_area_ha>=1000?(r.total_area_ha/1000).toFixed(0)+"k":r.total_area_ha.toLocaleString())+" ha"
-                                        :r.total_sites.toLocaleString()
+                                    r.total_sites.toLocaleString()
                                 )
                             );
                         })
@@ -228,12 +233,12 @@
                             e("button",{onClick:function(){setSelected(null);},style:{background:"none",border:"none",cursor:"pointer",fontSize:"16px",color:"rgba(255,255,255,0.7)"}},"✕")
                         ),
                         e("div",{style:{padding:"16px"}},
-                            e("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px",marginBottom:"14px"}},
+                            e("div",{style:{display:"grid",gridTemplateColumns:hasArea?"1fr 1fr":"1fr",gap:"8px",marginBottom:"14px"}},
                                 e("div",{style:{padding:"10px 12px",borderRadius:"10px",backgroundColor:"#F0FFF4",border:"1px solid #D1FAE5",textAlign:"center"}},
                                     e("div",{style:{fontSize:"22px",fontWeight:700,color:"#1B4332",fontFamily:"'JetBrains Mono',monospace"}},selectedRegion.total_sites),
                                     e("div",{style:{fontSize:"11px",color:"#6B7280"}},"designated sites")
                                 ),
-                                e("div",{style:{padding:"10px 12px",borderRadius:"10px",backgroundColor:"#F0FFF4",border:"1px solid #D1FAE5",textAlign:"center"}},
+                                hasArea&&selectedRegion.total_area_ha&&e("div",{style:{padding:"10px 12px",borderRadius:"10px",backgroundColor:"#F0FFF4",border:"1px solid #D1FAE5",textAlign:"center"}},
                                     e("div",{style:{fontSize:"22px",fontWeight:700,color:"#1B4332",fontFamily:"'JetBrains Mono',monospace"}},
                                         selectedRegion.total_area_ha>=1000000
                                             ?(selectedRegion.total_area_ha/1000000).toFixed(2)+"M"
@@ -254,7 +259,7 @@
                                     })
                                 )
                             ),
-                            e("div",null,
+                            selectedRegion.largest_sites.length>0&&e("div",null,
                                 e("div",{style:{fontSize:"11px",fontWeight:700,color:"#6B7280",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"6px"}},"Largest sites"),
                                 e("div",{style:{display:"flex",flexDirection:"column",gap:"4px"}},
                                     selectedRegion.largest_sites.map(function(s,i){
