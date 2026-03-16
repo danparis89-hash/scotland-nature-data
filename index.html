@@ -141,10 +141,50 @@
                 ? e("div",{style:{color:"#9CA3AF",fontSize:"13px",fontStyle:"italic"}},selected+" — coming soon")
                 : e("div",{style:{color:"#9CA3AF",fontSize:"13px"}},
                     "Select a designation to find out more");
+            var CURRENT_PCT=18.2, TARGET_PCT=30;
+            var fillPct=parseFloat((CURRENT_PCT/TARGET_PCT*100).toFixed(1));
+            var gap=parseFloat((TARGET_PCT-CURRENT_PCT).toFixed(1));
             return e("div",{style:{display:"flex",flexDirection:"column",gap:"16px"}},
                 e("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"16px"}},
                     e(CategoryBlock,{label:"Protected sites",types:PROTECTED}),
                     e(CategoryBlock,{label:"Other designations",types:OTHER})
+                ),
+                e("div",{style:{backgroundColor:"#fff",borderRadius:"16px",border:"1px solid #E5E7EB",overflow:"hidden"}},
+                    e("div",{style:{padding:"14px 20px",borderBottom:"1px solid #F3F4F6",display:"flex",alignItems:"center",gap:"10px"}},
+                        e("div",{style:{padding:"3px 9px",borderRadius:"5px",backgroundColor:"#1B4332",color:"#fff",fontSize:"12px",fontWeight:700,letterSpacing:"0.5px"}},"30×30"),
+                        e("div",{style:{fontSize:"12px",color:"#6B7280"}},"Scotland's land protected for nature")
+                    ),
+                    e("div",{style:{padding:"20px 24px"}},
+                        e("div",{style:{display:"flex",gap:"12px",marginBottom:"22px"}},
+                            e("div",{style:{flex:1,padding:"16px 12px",borderRadius:"12px",background:"linear-gradient(135deg,#1B4332 0%,#2D6A4F 100%)",textAlign:"center"}},
+                                e("div",{style:{fontSize:"42px",fontWeight:700,color:"#fff",fontFamily:"'JetBrains Mono',monospace",lineHeight:1}},CURRENT_PCT+"%"),
+                                e("div",{style:{fontSize:"11px",color:"rgba(255,255,255,0.7)",marginTop:"6px"}},"currently protected")
+                            ),
+                            e("div",{style:{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:"2px",padding:"0 4px",flexShrink:0}},
+                                e("div",{style:{fontSize:"11px",fontWeight:600,color:"#6B7280"}},gap+"%"),
+                                e("div",{style:{fontSize:"20px",color:"#D1FAE5",lineHeight:1}},"→"),
+                                e("div",{style:{fontSize:"10px",color:"#9CA3AF"}},"to go")
+                            ),
+                            e("div",{style:{flex:1,padding:"16px 12px",borderRadius:"12px",border:"2px dashed #52B788",backgroundColor:"#F0FFF4",textAlign:"center"}},
+                                e("div",{style:{fontSize:"42px",fontWeight:700,color:"#1B4332",fontFamily:"'JetBrains Mono',monospace",lineHeight:1}},TARGET_PCT+"%"),
+                                e("div",{style:{fontSize:"11px",color:"#6B7280",marginTop:"6px"}},"2030 target")
+                            )
+                        ),
+                        e("div",{style:{position:"relative"}},
+                            e("div",{style:{height:"22px",borderRadius:"11px",backgroundColor:"#D1FAE5",overflow:"hidden",position:"relative"}},
+                                e("div",{style:{position:"absolute",top:0,left:0,bottom:0,width:fillPct+"%",background:"linear-gradient(90deg,#1B4332 0%,#52B788 100%)",borderRadius:"11px",display:"flex",alignItems:"center",justifyContent:"flex-end",paddingRight:"10px"}},
+                                    e("span",{style:{fontSize:"10px",fontWeight:700,color:"#fff",fontFamily:"'JetBrains Mono',monospace"}},CURRENT_PCT+"%")
+                                )
+                            ),
+                            e("div",{style:{display:"flex",justifyContent:"space-between",marginTop:"5px",fontSize:"10px",color:"#9CA3AF"}},
+                                e("span","0%"),
+                                e("span",{style:{color:"#40916C",fontWeight:600}},"30% target")
+                            )
+                        ),
+                        e("div",{style:{marginTop:"10px",textAlign:"center",fontSize:"11px",color:"#9CA3AF"}},
+                            fillPct+"% of the way to the 2030 target"
+                        )
+                    )
                 ),
                 e("div",{style:{backgroundColor:"#fff",borderRadius:"16px",border:"1px solid #E5E7EB",padding:"20px 24px",minHeight:"80px",display:"flex",alignItems:"center"}},
                     aboutContent
