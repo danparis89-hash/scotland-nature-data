@@ -40,7 +40,12 @@
         var ResponsiveContainer = Recharts.ResponsiveContainer;
         var Cell = Recharts.Cell;
 
-        var GITHUB_DATA = "https://danparis89-hash.github.io/scotland-nature-data/dashboard-data";
+        // On GitHub Pages use the canonical URL; everywhere else (local dev server,
+        // local file open, etc.) use a relative path so locally-generated
+        // dashboard-data files are picked up directly – no need to deploy first.
+        var GITHUB_DATA = location.hostname.endsWith("github.io")
+            ? "https://danparis89-hash.github.io/scotland-nature-data/dashboard-data"
+            : "dashboard-data";
         var SCOT_PREFIX = ["AB","DD","DG","EH","FK","HS","IV","KA","KW","KY","ML","PA","PH","TD","ZE"];
         var DESIG_COL = { SSSI:"#2D6A4F", SAC:"#40916C", SPA:"#52B788", NNR:"#74C69D", Ramsar:"#95D5B2" };
         var ICONS = {
