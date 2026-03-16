@@ -182,8 +182,8 @@
             var selectedRegion=selected?norm.find(function(r){return r.local_authority===selected;}):null;
             return e("div",{style:{display:"flex",flexDirection:"column",gap:"20px"}},
                 e("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"12px",flexWrap:"wrap"}},
-                    e("div",{style:{fontSize:"13px",color:"#6B7280"}},
-                        norm.length+" Scottish council areas · "+norm.reduce(function(s,r){return s+r.total_sites;},0).toLocaleString()+" designated sites"
+                    e("div",{style:{fontSize:"13px",fontWeight:600,color:"#1B4332"}},
+                        "Nature site designations by local authority"
                     ),
                     e("div",{style:{display:"flex",gap:"6px"}},
                         [["alpha","A–Z"],["sites","By site count"]].map(function(v){
@@ -236,20 +236,10 @@
                             e("button",{onClick:function(){setSelected(null);},style:{background:"none",border:"none",cursor:"pointer",fontSize:"16px",color:"rgba(255,255,255,0.7)"}},"✕")
                         ),
                         e("div",{style:{padding:"16px"}},
-                            e("div",{style:{display:"grid",gridTemplateColumns:hasArea?"1fr 1fr":"1fr",gap:"8px",marginBottom:"14px"}},
+                            e("div",{style:{marginBottom:"14px"}},
                                 e("div",{style:{padding:"10px 12px",borderRadius:"10px",backgroundColor:"#F0FFF4",border:"1px solid #D1FAE5",textAlign:"center"}},
                                     e("div",{style:{fontSize:"22px",fontWeight:700,color:"#1B4332",fontFamily:"'JetBrains Mono',monospace"}},selectedRegion.total_sites),
-                                    e("div",{style:{fontSize:"11px",color:"#6B7280"}},"designated sites")
-                                ),
-                                hasArea&&selectedRegion.total_area_ha&&e("div",{style:{padding:"10px 12px",borderRadius:"10px",backgroundColor:"#F0FFF4",border:"1px solid #D1FAE5",textAlign:"center"}},
-                                    e("div",{style:{fontSize:"22px",fontWeight:700,color:"#1B4332",fontFamily:"'JetBrains Mono',monospace"}},
-                                        selectedRegion.total_area_ha>=1000000
-                                            ?(selectedRegion.total_area_ha/1000000).toFixed(2)+"M"
-                                            :selectedRegion.total_area_ha>=1000
-                                                ?(selectedRegion.total_area_ha/1000).toFixed(0)+"k"
-                                                :selectedRegion.total_area_ha.toLocaleString()
-                                    ),
-                                    e("div",{style:{fontSize:"11px",color:"#6B7280"}},"hectares protected")
+                                    e("div",{style:{fontSize:"11px",color:"#6B7280"}},"designations")
                                 )
                             ),
                             e("div",{style:{marginBottom:"14px"}},
@@ -281,7 +271,7 @@
                         )
                     )
                 ),
-                e("div",{style:{fontSize:"11px",color:"#9CA3AF",lineHeight:1.5}},"Trans-boundary sites are counted in every council area whose centroid falls within the site's approximate footprint, so regional totals may exceed the national total. Source: NatureScot open data (OGL v3.0).")
+                e("div",{style:{fontSize:"11px",color:"#9CA3AF",lineHeight:1.5}},"Source: NatureScot open data (OGL v3.0).")
             );
         }
 
