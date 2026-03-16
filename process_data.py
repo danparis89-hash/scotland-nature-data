@@ -58,8 +58,13 @@ for designation_type, filename in SITE_FILES.items():
     if gdf is not None:
         gdf["designation_type"] = designation_type
         all_sites.append(gdf)
-        site_counts[designation_type] = len(gdf)
-        print(f"    {designation_type}: {len(gdf)} sites")
+        code_col = find_col(gdf, ["PA_CODE", "SITE_CODE", "CODE"])
+        if code_col:
+            site_counts[designation_type] = gdf[code_col].nunique()
+        else:
+            name_col_tmp = find_col(gdf, ["PA_NAME", "NAME", "SITE_NAME", "name"])
+            site_counts[designation_type] = gdf[name_col_tmp].nunique() if name_col_tmp else len(gdf)
+        print(f"    {designation_type}: {site_counts[designation_type]} unique sites ({len(gdf)} polygons)")
 
 if not all_sites:
     print("ERROR: No site data loaded. Check your raw-data folder and filenames.")
