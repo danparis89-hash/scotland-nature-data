@@ -55,17 +55,6 @@
             Amphibians:"🐸", Reptiles:"🦎", Fish:"🐟", "Flowering Plants":"🌸",
             Ferns:"🌾", Mosses:"🪨", Molluscs:"🐌", Crustaceans:"🦀", Spiders:"🕷️"
         };
-        // GBIF class → common group name mapping (GBIF is the UK's biodiversity data backbone via NBN)
-        var GBIF_CLASS_MAP = {
-            Aves:"Birds", Mammalia:"Mammals", Insecta:"Insects", Amphibia:"Amphibians",
-            Reptilia:"Reptiles", Actinopterygii:"Fish", Elasmobranchii:"Fish",
-            Magnoliopsida:"Flowering Plants", Liliopsida:"Flowering Plants",
-            Pinopsida:"Plants", Polypodiopsida:"Ferns", Bryopsida:"Mosses",
-            Sphagnopsida:"Mosses", Jungermanniopsida:"Mosses",
-            Agaricomycetes:"Fungi", Leotiomycetes:"Fungi", Lecanoromycetes:"Fungi",
-            Arachnida:"Spiders", Gastropoda:"Molluscs", Bivalvia:"Molluscs",
-            Malacostraca:"Crustaceans", Maxillopoda:"Crustaceans"
-        };
         var TABS = [
             {id:"national", label:"National", icon:"🏴󠁧󠁢󠁳󠁣󠁴󠁿"},
             {id:"regional", label:"Regional", icon:"🗺️"},
@@ -109,14 +98,13 @@
             var probs=[];
             if(!status.github)probs.push("GitHub Pages data");
             if(!status.postcodes)probs.push("Postcodes.io");
-            if(!status.nbn)probs.push("Species data");
             if(probs.length===0)return null;
-            var allDown=probs.length===3;
+            var allDown=probs.length===2;
             return e("div",{style:{padding:"16px 20px",borderRadius:"12px",backgroundColor:allDown?"#FEF2F2":"#FFFBEB",border:"1px solid "+(allDown?"#FECACA":"#FDE68A"),fontSize:"13px",lineHeight:1.6}},
                 e("div",{style:{fontWeight:700,color:allDown?"#991B1B":"#92400E",marginBottom:"6px"}},allDown?"Data sources unreachable":"Some data sources unreachable"),
                 e("div",{style:{color:allDown?"#B91C1C":"#A16207"}},allDown?"This dashboard requires internet access.":"Unreachable: "+probs.join(", ")),
                 e("div",{style:{display:"flex",gap:"16px",marginTop:"10px"}},
-                    [["GitHub data",status.github],["Postcodes.io",status.postcodes],["Species (NBN/GBIF)",status.nbn]].map(function(x){
+                    [["GitHub data",status.github],["Postcodes.io",status.postcodes]].map(function(x){
                         return e("div",{key:x[0],style:{display:"flex",alignItems:"center",gap:"5px",fontSize:"12px"}},
                             e("span",{style:{width:8,height:8,borderRadius:"50%",backgroundColor:x[1]?"#22C55E":"#EF4444",display:"inline-block"}}),
                             e("span",{style:{color:"#374151"}},x[0]));
@@ -335,64 +323,6 @@
 
         // ── Postcode page ─────────────────────────────────────────────────────
 
-        function SpeciesPanel(p){
-            var groups=p.groups,onSelectGroup=p.onSelectGroup,selectedGroup=p.selectedGroup,speciesList=p.speciesList,loadingSpecies=p.loadingSpecies,radius=p.radius;
-            var chartData=groups.slice(0,12).map(function(g){return{name:g.name.length>14?g.name.slice(0,13)+"…":g.name,fullName:g.name,species:g.speciesCount||g.count,records:g.count};});
-            var totalSpecies=groups.reduce(function(s,g){return s+(g.speciesCount||0);},0);
-            var totalRecords=groups.reduce(function(s,g){return s+g.count;},0);
-            return e("div",null,
-                e("div",{style:{display:"flex",gap:"16px",marginBottom:"20px",flexWrap:"wrap"}},
-                    [{l:"Species recorded",v:totalSpecies.toLocaleString(),bg:"linear-gradient(135deg,#1B4332,#2D6A4F)",c:"#fff"},
-                     {l:"Total records",v:totalRecords.toLocaleString(),bg:"linear-gradient(135deg,#40916C,#52B788)",c:"#fff"},
-                     {l:"Taxonomic groups",v:groups.length,bg:"linear-gradient(135deg,#74C69D,#95D5B2)",c:"#1B4332"}
-                    ].map(function(s,i){
-                        return e("div",{key:i,style:{padding:"12px 20px",borderRadius:"12px",background:s.bg,color:s.c,flex:1,minWidth:140}},
-                            e("div",{style:{fontSize:"28px",fontWeight:700,fontFamily:"'JetBrains Mono',monospace"}},s.v),
-                            e("div",{style:{fontSize:"12px",opacity:0.8,marginTop:2}},s.l));
-                    })
-                ),
-                e("div",{style:{width:"100%",height:Math.max(280,chartData.length*32)}},
-                    e(ResponsiveContainer,{width:"100%",height:"100%"},
-                        e(BarChart,{data:chartData,layout:"vertical",margin:{left:10,right:30,top:5,bottom:5}},
-                            e(XAxis,{type:"number",tick:{fontSize:12,fill:"#6B7280"},axisLine:false,tickLine:false}),
-                            e(YAxis,{type:"category",dataKey:"name",width:120,tick:{fontSize:12,fill:"#374151"},axisLine:false,tickLine:false}),
-                            e(Tooltip,{content:function(tp){
-                                if(!tp.active||!tp.payload||!tp.payload[0])return null;
-                                var d=tp.payload[0].payload;
-                                return e("div",{style:{background:"#fff",border:"1px solid #E5E7EB",borderRadius:"8px",padding:"10px 14px",boxShadow:"0 4px 12px rgba(0,0,0,0.1)",fontSize:"13px"}},
-                                    e("div",{style:{fontWeight:700,color:"#1B4332"}},(ICONS[d.fullName]||"📋")+" "+d.fullName),
-                                    e("div",{style:{color:"#6B7280",marginTop:4}},d.species+" species · "+d.records.toLocaleString()+" records"));
-                            }}),
-                            e(Bar,{dataKey:"species",radius:[0,6,6,0],cursor:"pointer",onClick:function(d){onSelectGroup(d.fullName);}},
-                                chartData.map(function(d,i){return e(Cell,{key:i,fill:d.fullName===selectedGroup?"#1B4332":"#52B788"});})
-                            )
-                        )
-                    )
-                ),
-                e("div",{style:{fontSize:"12px",color:"#9CA3AF",textAlign:"center",marginTop:4}},"Click a bar to view species list"),
-                selectedGroup&&e("div",{style:{marginTop:"20px",border:"1px solid #D1FAE5",borderRadius:"12px",overflow:"hidden",backgroundColor:"#FAFDF7"}},
-                    e("div",{style:{padding:"12px 16px",backgroundColor:"#D8F3DC",display:"flex",alignItems:"center",justifyContent:"space-between"}},
-                        e("span",{style:{fontWeight:700,color:"#1B4332",fontSize:"14px"}},(ICONS[selectedGroup]||"📋")+" "+selectedGroup),
-                        e("button",{onClick:function(){onSelectGroup(null);},style:{background:"none",border:"none",cursor:"pointer",fontSize:"18px",color:"#6B7280"}},"✕")
-                    ),
-                    loadingSpecies
-                        ?e("div",{style:{padding:"24px",textAlign:"center",color:"#6B7280"}},"Loading species…")
-                        :speciesList&&speciesList.length>0
-                            ?e("div",{style:{maxHeight:320,overflowY:"auto"}},
-                                speciesList.map(function(sp,i){
-                                    return e("div",{key:i,style:{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 16px",borderBottom:i<speciesList.length-1?"1px solid #E5E7EB":"none",backgroundColor:i%2===0?"#fff":"#FAFDF7"}},
-                                        e("div",null,
-                                            e("div",{style:{fontWeight:600,color:"#1B4332",fontSize:"13px"}},sp.name),
-                                            e("div",{style:{fontSize:"11px",color:"#9CA3AF",fontStyle:"italic"}},sp.scientificName)
-                                        ),
-                                        e("div",{style:{fontFamily:"'JetBrains Mono',monospace",fontSize:"13px",fontWeight:600,color:"#40916C"}},sp.count));
-                                })
-                            )
-                            :e("div",{style:{padding:"24px",textAlign:"center",color:"#6B7280"}},"No species data available.")
-                )
-            );
-        }
-
         function NearbySitesPanel(p){
             var sites=p.sites,lat=p.lat,lon=p.lon,radius=p.radius,onRadiusChange=p.onRadiusChange;
             // Deduplicate by name+type: large sites like Firth of Forth are stored as
@@ -463,90 +393,25 @@
             var _loc=useState(null), location=_loc[0], setLocation=_loc[1];
             var _ld=useState(false), loading=_ld[0], setLoading=_ld[1];
             var _err=useState(null), error=_err[0], setError=_err[1];
-            var _sg=useState(null), speciesGroups=_sg[0], setSpeciesGroups=_sg[1];
-            var _sel=useState(null), selectedGroup=_sel[0], setSelectedGroup=_sel[1];
-            var _sl=useState(null), speciesList=_sl[0], setSpeciesList=_sl[1];
-            var _lsp=useState(false), loadingSpecies=_lsp[0], setLoadingSpecies=_lsp[1];
-            var _sld=useState(false), speciesLoading=_sld[0], setSpeciesLoading=_sld[1];
-            var _se=useState(null), speciesError=_se[0], setSpeciesError=_se[1];
             var _rad=useState(5), radius=_rad[0], setRadius=_rad[1];
             var canSearch=apiStatus&&apiStatus.postcodes;
-
-            // Try NBN Atlas API first, fall back to GBIF occurrence API
-            function fetchSpeciesGroups(lat, lon, rad){
-                return fetchWithTimeout("https://records-ws.nbnatlas.org/explore/groups?lat="+lat+"&lon="+lon+"&radius="+rad+"&fq=country:Scotland", 5000)
-                    .then(function(r){if(!r.ok)throw 0;return r.json();})
-                    .then(function(d){
-                        if(!Array.isArray(d)||d.length===0)throw 0;
-                        return {source:"nbn", groups:d.filter(function(g){return g.count>0;}).map(function(g){return{name:g.name,count:g.count,speciesCount:g.speciesCount||0};}).sort(function(a,b){return b.count-a.count;})};
-                    })
-                    .catch(function(){
-                        // Fallback: GBIF occurrence API with class facets
-                        return fetch("https://api.gbif.org/v1/occurrence/search?geoDistance="+lat+","+lon+","+rad+"km&country=GB&limit=0&facet=class&facetLimit=30")
-                            .then(function(r){if(!r.ok)throw 0;return r.json();})
-                            .then(function(d){
-                                if(!d.facets||!d.facets[0]||!d.facets[0].counts||!d.facets[0].counts.length)throw 0;
-                                var merged={};
-                                d.facets[0].counts.forEach(function(c){
-                                    var common=GBIF_CLASS_MAP[c.name]||c.name;
-                                    if(!merged[common])merged[common]={name:common,count:0,speciesCount:0,classes:[]};
-                                    merged[common].count+=c.count;
-                                    merged[common].classes.push(c.name);
-                                });
-                                var groups=Object.keys(merged).map(function(k){return merged[k];}).sort(function(a,b){return b.count-a.count;});
-                                return {source:"gbif", groups:groups};
-                            });
-                    });
-            }
 
             function handleSearch(){
                 var clean=postcode.replace(/\s/g,"").toUpperCase();
                 if(clean.length<5){setError("Please enter a full Scottish postcode (e.g. EH1 1RE)");return;}
                 if(SCOT_PREFIX.indexOf(clean.slice(0,2))<0&&!/^G\d/.test(clean)){setError("This doesn't look like a Scottish postcode.");return;}
-                setError(null);setLoading(true);setSpeciesGroups(null);setSelectedGroup(null);setSpeciesList(null);setSpeciesError(null);
+                setError(null);setLoading(true);
                 fetch("https://api.postcodes.io/postcodes/"+clean)
                     .then(function(r){if(!r.ok)throw new Error("Invalid");return r.json();})
                     .then(function(data){
                         if(data.result.country!=="Scotland")throw new Error("Not Scotland");
                         var loc={lat:data.result.latitude,lon:data.result.longitude,admin:data.result.admin_district,constituency:data.result.parliamentary_constituency,postcode:data.result.postcode};
-                        setLocation(loc);setLoading(false);setSpeciesLoading(true);
-                        return fetchSpeciesGroups(loc.lat, loc.lon, radius)
-                            .then(function(result){
-                                setSpeciesGroups(result.groups);
-                            })
-                            .catch(function(){setSpeciesError("Could not load species data. Try the NBN Atlas directly.");})
-                            .then(function(){setSpeciesLoading(false);});
+                        setLocation(loc);setLoading(false);
                     })
                     .catch(function(err){
                         setLoading(false);
                         setError(err.message==="Not Scotland"?"This postcode isn't in Scotland.":err.message==="Invalid"?"Postcode not recognised.":"Could not look up postcode. Check your internet connection.");
                     });
-            }
-
-            function handleGroupSelect(groupName){
-                if(groupName===selectedGroup){setSelectedGroup(null);setSpeciesList(null);return;}
-                setSelectedGroup(groupName);setLoadingSpecies(true);
-                // Find the group object to check if it came from GBIF (has classes array)
-                var grp=speciesGroups&&speciesGroups.find(function(g){return g.name===groupName;});
-                if(grp&&grp.classes){
-                    // GBIF path: search species facet filtered by class(es)
-                    var classFilter=grp.classes.map(function(c){return "class="+encodeURIComponent(c);}).join("&");
-                    fetch("https://api.gbif.org/v1/occurrence/search?geoDistance="+location.lat+","+location.lon+","+radius+"km&country=GB&"+classFilter+"&limit=0&facet=species&facetLimit=20")
-                        .then(function(r){if(!r.ok)throw 0;return r.json();})
-                        .then(function(d){
-                            if(!d.facets||!d.facets[0])throw 0;
-                            setSpeciesList(d.facets[0].counts.map(function(s){return{name:s.name,scientificName:s.name,count:s.count};}));
-                        })
-                        .catch(function(){setSpeciesList([]);})
-                        .then(function(){setLoadingSpecies(false);});
-                } else {
-                    // NBN Atlas path (original)
-                    fetchWithTimeout("https://records-ws.nbnatlas.org/explore/group/"+encodeURIComponent(groupName)+"?lat="+location.lat+"&lon="+location.lon+"&radius="+radius+"&pageSize=20&fq=country:Scotland")
-                        .then(function(r){if(!r.ok)throw 0;return r.json();})
-                        .then(function(d){setSpeciesList(d.map(function(s){return{name:s.commonName||s.name,scientificName:s.name,count:s.count};}));})
-                        .catch(function(){setSpeciesList([]);})
-                        .then(function(){setLoadingSpecies(false);});
-                }
             }
 
             return e("div",{style:{display:"flex",flexDirection:"column",gap:"20px"}},
@@ -570,24 +435,7 @@
                         )
                     )
                     :e("div",{style:{padding:"16px 20px",borderRadius:"12px",backgroundColor:"#FFFBEB",border:"1px solid #FDE68A",fontSize:"13px",color:"#92400E"}},"Postcodes.io is unreachable. Postcode search requires an internet connection."),
-                location&&allSites&&e(NearbySitesPanel,{sites:allSites,lat:location.lat,lon:location.lon,radius:radius,onRadiusChange:setRadius}),
-                location&&e("div",{className:"fade-in",style:{backgroundColor:"#fff",borderRadius:"16px",border:"1px solid #E5E7EB",overflow:"hidden"}},
-                    e("div",{style:{padding:"16px 20px 12px",borderBottom:"1px solid #F3F4F6"}},
-                        e("h2",{style:{margin:0,fontSize:"16px",fontWeight:700,color:"#1B4332"}},"🦅 Species Recorded Nearby"),
-                        e("p",{style:{margin:"2px 0 0",fontSize:"12px",color:"#9CA3AF"}},"Live data from the ",e("a",{href:"https://records.nbnatlas.org/explore/your-area#lat="+location.lat+"&lon="+location.lon+"&radius="+radius+"&taxa=ALL_SPECIES",target:"_blank",rel:"noopener noreferrer",style:{color:"#40916C"}},"NBN Atlas")," within "+radius+"km")
-                    ),
-                    e("div",{style:{padding:"20px"}},
-                        speciesLoading
-                            ?e("div",{style:{padding:"40px",textAlign:"center",color:"#6B7280"}},"Loading species records from NBN Atlas…")
-                            :speciesError
-                                ?e("div",{style:{padding:"24px",textAlign:"center",color:"#DC2626",fontSize:"13px"}},speciesError)
-                                :speciesGroups&&speciesGroups.length>0
-                                    ?e(SpeciesPanel,{groups:speciesGroups,onSelectGroup:handleGroupSelect,selectedGroup:selectedGroup,speciesList:speciesList,loadingSpecies:loadingSpecies,radius:radius})
-                                    :speciesGroups&&speciesGroups.length===0
-                                        ?e("div",{style:{padding:"24px",textAlign:"center",color:"#6B7280"}},"No species records found nearby.")
-                                        :null
-                    )
-                )
+                location&&allSites&&e(NearbySitesPanel,{sites:allSites,lat:location.lat,lon:location.lon,radius:radius,onRadiusChange:setRadius})
             );
         }
 
@@ -602,15 +450,12 @@
             var _sites=useState(null), allSites=_sites[0], setAllSites=_sites[1];
 
             useEffect(function(){
-                var s={github:false,postcodes:false,nbn:false};
+                var s={github:false,postcodes:false};
                 Promise.all([
                     fetch(GITHUB_DATA+"/national.json").then(function(r){if(r.ok)return r.json();throw 0;}).then(function(d){setNatData(d);s.github=true;}).catch(function(){}),
                     fetch(GITHUB_DATA+"/regional.json").then(function(r){if(r.ok)return r.json();throw 0;}).then(function(d){setRegData(d);s.github=true;}).catch(function(){setRegError(true);}),
                     fetch(GITHUB_DATA+"/sites.json").then(function(r){if(r.ok)return r.json();throw 0;}).then(function(d){setAllSites(d);s.github=true;}).catch(function(){}),
-                    fetch("https://api.postcodes.io/postcodes/EH11RE").then(function(r){s.postcodes=r.ok;}).catch(function(){}),
-                    fetchWithTimeout("https://records-ws.nbnatlas.org/explore/groups?lat=55.95&lon=-3.19&radius=1",5000).then(function(r){s.nbn=r.ok;}).catch(function(){
-                        return fetch("https://api.gbif.org/v1/occurrence/search?limit=0&country=GB").then(function(r){s.nbn=r.ok;});
-                    }).catch(function(){})
+                    fetch("https://api.postcodes.io/postcodes/EH11RE").then(function(r){s.postcodes=r.ok;}).catch(function(){})
                 ]).then(function(){setApiStatus(s);});
             },[]);
 
@@ -618,7 +463,7 @@
                 e("div",{style:{background:"linear-gradient(135deg,#1B4332 0%,#2D6A4F 60%,#40916C 100%)",padding:"28px 24px 0",color:"#fff"}},
                     e("div",{style:{maxWidth:960,margin:"0 auto"}},
                         e("h1",{style:{margin:"0 0 4px",fontSize:"24px",fontWeight:700,letterSpacing:"-0.5px"}},"Scotland Nature Dashboard"),
-                        e("p",{style:{margin:"0 0 20px",fontSize:"13px",opacity:0.75}},"Protected sites & biodiversity data from NatureScot and the NBN Atlas"),
+                        e("p",{style:{margin:"0 0 20px",fontSize:"13px",opacity:0.75}},"Protected sites & biodiversity data from NatureScot"),
                         e("div",{style:{display:"flex",gap:"4px"}},
                             TABS.map(function(tab){
                                 return e("button",{key:tab.id,onClick:function(){setActiveTab(tab.id);},style:{
@@ -640,7 +485,6 @@
                         e("div",{style:{padding:"14px 18px",borderRadius:"12px",backgroundColor:"#F9FAFB",border:"1px solid #E5E7EB",fontSize:"11px",color:"#9CA3AF",lineHeight:1.6}},
                             e("span",{style:{fontWeight:600,color:"#6B7280"}},"Data: "),
                             "Protected sites: ",e("a",{href:"https://gis-downloads.nature.scot/",style:{color:"#40916C"}},"NatureScot")," (OGL v3.0) · ",
-                            "Species: ",e("a",{href:"https://nbnatlas.org/",style:{color:"#40916C"}},"NBN Atlas")," / ",e("a",{href:"https://www.gbif.org/",style:{color:"#40916C"}},"GBIF")," (CC-BY/CC-BY-NC) · ",
                             "Postcodes: ",e("a",{href:"https://postcodes.io/",style:{color:"#40916C"}},"Postcodes.io")," (OS data © Crown copyright)"
                         )
                     )
