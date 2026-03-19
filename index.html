@@ -474,18 +474,18 @@
 
             // Try NBN Atlas API first, fall back to GBIF occurrence API
             function fetchSpeciesGroups(lat, lon, rad){
-                return fetchWithTimeout("https://records-ws.nbnatlas.org/explore/groups?lat="+lat+"&lon="+lon+"&radius="+rad+"&fq=country:Scotland")
+                return fetchWithTimeout("https://records-ws.nbnatlas.org/explore/groups?lat="+lat+"&lon="+lon+"&radius="+rad+"&fq=country:Scotland", 5000)
                     .then(function(r){if(!r.ok)throw 0;return r.json();})
                     .then(function(d){
                         if(!Array.isArray(d)||d.length===0)throw 0;
                         return {source:"nbn", groups:d.filter(function(g){return g.count>0;}).map(function(g){return{name:g.name,count:g.count,speciesCount:g.speciesCount||0};}).sort(function(a,b){return b.count-a.count;})};
                     })
                     .catch(function(){
-                        // Fallback: GBIF occurrence API with class facets for Scotland (GADM level-1)
-                        return fetch("https://api.gbif.org/v1/occurrence/search?geoDistance="+lat+","+lon+","+rad+"km&gadmGid=GBR.3_1&limit=0&facet=class&facetLimit=30")
+                        // Fallback: GBIF occurrence API with class facets
+                        return fetch("https://api.gbif.org/v1/occurrence/search?geoDistance="+lat+","+lon+","+rad+"km&country=GB&limit=0&facet=class&facetLimit=30")
                             .then(function(r){if(!r.ok)throw 0;return r.json();})
                             .then(function(d){
-                                if(!d.facets||!d.facets[0])throw 0;
+                                if(!d.facets||!d.facets[0]||!d.facets[0].counts||!d.facets[0].counts.length)throw 0;
                                 var merged={};
                                 d.facets[0].counts.forEach(function(c){
                                     var common=GBIF_CLASS_MAP[c.name]||c.name;
@@ -531,7 +531,7 @@
                 if(grp&&grp.classes){
                     // GBIF path: search species facet filtered by class(es)
                     var classFilter=grp.classes.map(function(c){return "class="+encodeURIComponent(c);}).join("&");
-                    fetch("https://api.gbif.org/v1/occurrence/search?geoDistance="+location.lat+","+location.lon+","+radius+"km&gadmGid=GBR.3_1&"+classFilter+"&limit=0&facet=species&facetLimit=20")
+                    fetch("https://api.gbif.org/v1/occurrence/search?geoDistance="+location.lat+","+location.lon+","+radius+"km&country=GB&"+classFilter+"&limit=0&facet=species&facetLimit=20")
                         .then(function(r){if(!r.ok)throw 0;return r.json();})
                         .then(function(d){
                             if(!d.facets||!d.facets[0])throw 0;
@@ -609,7 +609,7 @@
                     fetch(GITHUB_DATA+"/sites.json").then(function(r){if(r.ok)return r.json();throw 0;}).then(function(d){setAllSites(d);s.github=true;}).catch(function(){}),
                     fetch("https://api.postcodes.io/postcodes/EH11RE").then(function(r){s.postcodes=r.ok;}).catch(function(){}),
                     fetchWithTimeout("https://records-ws.nbnatlas.org/explore/groups?lat=55.95&lon=-3.19&radius=1",5000).then(function(r){s.nbn=r.ok;}).catch(function(){
-                        return fetch("https://api.gbif.org/v1/occurrence/search?limit=0&gadmGid=GBR.3_1").then(function(r){s.nbn=r.ok;});
+                        return fetch("https://api.gbif.org/v1/occurrence/search?limit=0&country=GB").then(function(r){s.nbn=r.ok;});
                     }).catch(function(){})
                 ]).then(function(){setApiStatus(s);});
             },[]);
