@@ -511,7 +511,7 @@
                 location&&e("div",{className:"fade-in",style:{backgroundColor:"#fff",borderRadius:"16px",border:"1px solid #E5E7EB",overflow:"hidden"}},
                     e("div",{style:{padding:"16px 20px 12px",borderBottom:"1px solid #F3F4F6"}},
                         e("h2",{style:{margin:0,fontSize:"16px",fontWeight:700,color:"#1B4332"}},"🦅 Species Recorded Nearby"),
-                        e("p",{style:{margin:"2px 0 0",fontSize:"12px",color:"#9CA3AF"}},"Live data from the NBN Atlas within "+radius+"km")
+                        e("p",{style:{margin:"2px 0 0",fontSize:"12px",color:"#9CA3AF"}},"Live data from the ",e("a",{href:"https://records.nbnatlas.org/explore/your-area#lat="+location.lat+"&lon="+location.lon+"&radius="+radius+"&taxa=ALL_SPECIES",target:"_blank",rel:"noopener noreferrer",style:{color:"#40916C"}},"NBN Atlas")," within "+radius+"km")
                     ),
                     e("div",{style:{padding:"20px"}},
                         speciesLoading
