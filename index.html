@@ -526,7 +526,7 @@
                     fetch(GITHUB_DATA+"/regional.json").then(function(r){if(r.ok)return r.json();throw 0;}).then(function(d){setRegData(d);s.github=true;}).catch(function(){setRegError(true);}),
                     fetch(GITHUB_DATA+"/sites.json").then(function(r){if(r.ok)return r.json();throw 0;}).then(function(d){setAllSites(d);s.github=true;}).catch(function(){}),
                     fetch("https://api.postcodes.io/postcodes/EH11RE").then(function(r){s.postcodes=r.ok;}).catch(function(){}),
-                    fetchWithTimeout("https://map.sepa.org.uk/arcgishosted/rest/services/SEFS/SEFS_FLOODING/MapServer?f=json",5000).then(function(r){s.sepa=r.ok;}).catch(function(){})
+                    fetchWithTimeout("https://map.sepa.org.uk/server/rest/services/Open/Flood_Maps/MapServer?f=json",5000).then(function(r){s.sepa=r.ok;}).catch(function(){})
                 ]).then(function(){setApiStatus(s);});
             },[]);
 
