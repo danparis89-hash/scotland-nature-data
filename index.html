@@ -99,15 +99,15 @@
         function StatusBanner(p){
             var status=p.status;
             if(!status) return e("div",{style:{padding:"12px 16px",borderRadius:"10px",backgroundColor:"#F9FAFB",border:"1px solid #E5E7EB",fontSize:"13px",color:"#6B7280",textAlign:"center"}},"Checking data sources…");
-            var probs=[];
-            if(!status.github)probs.push("GitHub Pages data");
-            if(!status.postcodes)probs.push("Postcodes.io");
-            if(!status.sepa)probs.push("SEPA");
-            if(probs.length===0)return null;
-            var allDown=probs.length===3;
+            var coreProbs=[];
+            if(!status.github)coreProbs.push("GitHub Pages data");
+            if(!status.postcodes)coreProbs.push("Postcodes.io");
+            // SEPA is optional — don't trigger the warning banner just for SEPA being down
+            if(coreProbs.length===0) return null;
+            var allDown=coreProbs.length===2;
             return e("div",{style:{padding:"16px 20px",borderRadius:"12px",backgroundColor:allDown?"#FEF2F2":"#FFFBEB",border:"1px solid "+(allDown?"#FECACA":"#FDE68A"),fontSize:"13px",lineHeight:1.6}},
                 e("div",{style:{fontWeight:700,color:allDown?"#991B1B":"#92400E",marginBottom:"6px"}},allDown?"Data sources unreachable":"Some data sources unreachable"),
-                e("div",{style:{color:allDown?"#B91C1C":"#A16207"}},allDown?"This dashboard requires internet access.":"Unreachable: "+probs.join(", ")),
+                e("div",{style:{color:allDown?"#B91C1C":"#A16207"}},allDown?"This dashboard requires internet access.":"Unreachable: "+coreProbs.join(", ")),
                 e("div",{style:{display:"flex",gap:"16px",marginTop:"10px"}},
                     [["GitHub data",status.github],["Postcodes.io",status.postcodes],["SEPA",status.sepa]].map(function(x){
                         return e("div",{key:x[0],style:{display:"flex",alignItems:"center",gap:"5px",fontSize:"12px"}},
@@ -526,7 +526,7 @@
                     fetch(GITHUB_DATA+"/regional.json").then(function(r){if(r.ok)return r.json();throw 0;}).then(function(d){setRegData(d);s.github=true;}).catch(function(){setRegError(true);}),
                     fetch(GITHUB_DATA+"/sites.json").then(function(r){if(r.ok)return r.json();throw 0;}).then(function(d){setAllSites(d);s.github=true;}).catch(function(){}),
                     fetch("https://api.postcodes.io/postcodes/EH11RE").then(function(r){s.postcodes=r.ok;}).catch(function(){}),
-                    fetchWithTimeout("https://map.sepa.org.uk/arcgishosted/rest/services/SEFS/SEFS_FLOODING/MapServer?f=json",5000).then(function(r){s.sepa=r.ok;}).catch(function(){})
+                    fetchWithTimeout("https://map.sepa.org.uk/server/rest/services/Open/Flood_Maps/MapServer?f=json",5000).then(function(r){s.sepa=r.ok;}).catch(function(){})
                 ]).then(function(){setApiStatus(s);});
             },[]);
 
